@@ -1,0 +1,280 @@
+%%% This is the LaTeX file for the x86 team, as listed below, in Dr. Hamlen's 
+%%% fall 2012 CS 6V81-003: Language-based Security class.
+
+\documentclass[conference]{IEEEtran}
+
+\usepackage{cite}
+\usepackage{url}
+\usepackage{amssymb}
+\usepackage{eucal}
+\usepackage{color}
+\usepackage{graphicx}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage[cmex10]{amsmath}
+\usepackage{array}
+\usepackage[caption=false,font=footnotesize]{subfig}
+\usepackage{fixltx2e}
+\usepackage{enumerate}
+
+\newcounter{change}[section]
+\newcommand{\cn}{\textsuperscript{\textcolor{red}{[citation needed]}}}
+\newcommand{\cp}[1]{\textcolor{red}{\bf [#1]}}
+\newcommand{\el}[1]{\textcolor{red}{\em (\arabic{section}.\arabic{change}\addtocounter{change}{1}) Elaborate on #1.}}
+\newcommand{\ch}[1]{\textcolor{red}{\bf (\arabic{section}.\arabic{change}\addtocounter{change}{1}) #1}}
+\renewcommand{\labelitemi}{-}
+
+
+\begin{document}
+
+\title{Verifying the Verifier}
+
+\author{
+{Benjamin Ferrell, Kenneth Miller, Matthew Pettersson, Justin Sahs, Brett Webster}\\
+\{bjf091000, kenneth.miller,  mcp085000, jcs074000,  brett.webster\}@utdallas.edu
+}
+
+\maketitle
+
+\begin{abstract}
+
+The x86 instruction set architecture, although widely used, remains critical to cyber security as a technology born in absence to the auspices of proper security review, and therefore ripe with design flaws that represent inherent security vulnerabilities.
+This paper illustrates the design, implementation, and brief evaluation of a machine-code verifier for the native code rewriting and in-lining system (REINS)\cite{wartell12acsac}, with the beginnings of a formal correctness proof written in Coq\cite{Coq:Misc}.  
+
+Central to our approach is a model of the x86 architecture\cite{MorrisettTTTG12}, developed in Coq, specifically targeting Microsoft Windows executables in the Portable Execution file format. 
+
+\end{abstract}
+
+\section{INTRODUCTION}
+
+For more than twenty years the x86\footnote{We use x86, IA-32, x86-32, and i386 interchangeably} 32-bit instruction set architecture, that was first introduced with the Intel 80386 processor in 1986, has aided technological and academic progression.  
+Yet, arbitrary x86 executables of untrusted origin continue to linger as possible malicious vectors due to the attributes of its design, such as the capability to execute either code or data, which make it a security hazard.
+
+In response to this, and many other cyber threats, many approaches have been researched in great depth.
+For instance, a somewhat appealing approach is that of the monolithic Virtual Machines, which can be used to monitor execution.  
+VM implementations, however, are large and burdensome.    
+
+Our project leverages a light weight solution, utilizing a software-based fault isolation (SFI) approach, the REINS project.
+Much success has been made towards securing untrusted code via SFI implementations and providing machine checked proofs of validity for strong confidence such as PittSFIeld\cite{McCamantM06}, NaCl\cite{Yee09nativeclient:} and RockSalt\cite{MorrisettTTTG12}.
+However these early implementations required the code producers support, such as gcc-produced assembly code, program database files, or debug information.
+If the implementations respective requirements are not supplied, SFI cannot be enforced by any of these endeavors.
+This failure simply rejects the native code, and therefore, provides no benefits. 
+The end effect is a severely restricted set of applicable cases, with the complete circumscription of legacy binaries.
+
+REINS \cite{wartell12acsac}, the latest in an ever evolving set of SFI systems, is the first compiler-agnostic, machine-certifying, x86 specification and implementation that suports real-world COTS binaries without the need for any developer supports source, debugging symbols or any other additional information other than the executable itself.  
+Our work builds upon the RockSalt x86 formal model in order to implement the REINS algorithm and subsequently a verification of it in Coq.  
+
+In summary, our work makes the following contributions specific to REINS:
+\begin{itemize}
+\item We extend the RockSalt x86 formal model in Coq to support a subset of the Portable Executable (PE) file format (we mainly model the parts of the PE format relevant to the REINS verification algorithm).
+\item We implement the REINS verification algorithm.
+\item We lay the foundation for a proof of the security properties that follow from the formal specification.
+\end{itemize}
+
+The remainder of this paper is organized as follows.  
+Section 2 develops essential or key architectural concepts that are then elaborated in section 3, which addresses detail.
+We then categorically assess the system in section 4.  
+In sections 5 and 6 we discuss relevant prior systems and the future of our work, respectively.
+Section 7 concludes. 
+
+\section{BACKGROUND}
+
+Due to the large and often perilous nature of the x86 instruction set, a machine checked formal proof of correctness is often desired.  
+As in complex or mission critical systems, preventing vulnerabilities with a high assurance is only feasible or even achievable through formal means.  
+
+Hence the goal of our project is to implement a verified Coq checker for REINS rewritten executables. 
+Thus ensuring rewritten binaries provably adhere to REINS correctness properties, and in turn, are free of malicious instructions or unforseen logic errors (bugs). 
+
+\section{DETAILED DESIGN}
+
+In this section we illustrate our architecture and provide a detailed design of our project.  
+Mirroring our progression throughout the semester, our project naturally consists of three subsections:
+\begin{enumerate}[(a)] 
+\item An augmented RockSalt model, poised as a foundation of this and future work  
+\item the addition of portable executable components 
+\item our implementation of the REINS algorithm and a machine checked proofs that our implementation follows the REINS formal specification
+\end{enumerate}
+When combined, these form the beginning of proving inherent security properties that follow from the conjugation of all properties outlined in the REINS formal specification.
+
+\subsection{Building on the RockSalt Model}
+
+Morrisett \emph{et al.} greatly advanced NaCl with their contributions of RockSalt.  
+The RockSalt Coq model for the x86 architecture consist of three major stages: (1) a decoder to translate bytes into an abstract syntax, (2) a compiler that translates the abstract syntax into a sequence of RTL instructions, and (3) an interpreter for the RTL instructions.
+ 
+The abstract syntax for instruction is generated by the x86 model's decoder.  
+The translation is specified via generic grammars constructed in a domain-specific language embedded in Coq.
+The language lets users specify a pattern and associated semantic actions for transforming input strings to outputs such as abstract syntax.
+The language is limited to recognizing regular expressions; however, the semantic actions are arbitrary Coq functions. 
+In RockSalt and our project, these semantic actions are defined using an inductively defined predicate, which makes it easy to symbolically reason about grammars.  
+
+While the denotational specification makes it easy to reason about grammars, it cannot be directly executed.  
+Consequently, RockSalt includes a parsing function which, when given a record representing a machine state, fetches bytes from the address specified by the program counter and attempts to match them against the grammar and build the appropriate instruction syntax.
+
+The parsing function is defined by taking the derivation of the x86 grammar, with respect to the sequence of bits in each byte, and then checking to see if the resulting grammar accepts the empty string.  
+Reasoning about derivatives is much easier in Coq than attempting to transform grammars into the usual graph-bases formalisms, due to not needing to worry about issues such as naming nodes, equivalence on graphs, or induction principles for graphs.  
+Calculating the derivative, including the appropriate transformation on the semantic actions are skillfully provided as straight forward functions in the RockSalt paper\cite{MorrisettTTTG12}.
+ 
+Once the iterated derivative of the grammar is calculated with respect to a string of bits, the set of related semantic values are easily extractable by running an extract function, which returns those semantic values associated with the empty string, also in the RockSalt paper\cite{MorrisettTTTG12}.
+
+Our efficient REINS checker, derived from a marriage of the NaCl checker and the REINS algorithm, as discussed in the REINS specific section, is built from a deterministic finite-state automaton (DFA) generated off-line, re-using the definitions for the grammars and derivations in the parsing library.
+
+The second stage translates the parsed bytes into a RISC-like register transfer list (RTL) language for bit-vectors.
+This language abstracts over the x86 architecture's definition of machine states as a finite map from addresses to bytes.  
+For each x86 instruction, the RockSalt model defines a function that translates the abstract syntax into a sequence of RTL instructions. 
+This translation is encapsulated in a monad that addresses allocating fresh local variables, and that allows the construction of higher-level operations from sequences of RTL commands.  
+
+Once the decoder and translation to RTL are defined, the next step is to define a semantics of RTL instructions.
+%We found it interesting that the use of a small-step operational semantics for modeling RTL execution, encoded as an inductive predicate, was considered.  
+%However, this would prevent us from extracting an executable interpreter, which we need for validation.
+%Instead, we encode a step in the semantics as a function from RTL machine states to RTL machine states. 
+These semantics are given as small-step operational semantics, encoded as a step function from RTL machine states to RTL machine states.
+RTL machine states record the value of the various x86 locations, the memory, and the values of the local variables. It is worth noting that one of the RTL instructions is an instruction that fetches an x86 instruction from memory, then decodes and executes it.
+
+%A majority of the original RockSalt operations are simple bit-vector computations adopted from the CompCert integer bit-vector library\cite{Leroy-Compcert-CACM}.
+%However, porting the RockSalt model to accommodate the REINS algorithm required many additional bit-vetor computations and proofs.
+%For example: low and high bit values for specific binary numbers, expontional properties, and one or two bit shifts. 
+%This newly accumulated library of bit-vector computations consist of straightforward definitions and can easily be extracted to OCaml code. 
+
+\subsection{Portable Executables}
+
+Due to the nature of some of the REINS formal specifications, much of the algorithm could not be implemented prior to developing a capability to incorporate a representation of the executable as it resides on disk to Coq. The applicable specifications that stipulated this requirement were: 
+\begin{itemize} 
+\item executable sections reside in low memory 
+\item no exported symbols target low memory chunk boundaries 
+\item computed jumps through the Import Address Table must be preceded by masking operations
+\end{itemize}
+
+Because Coq lacks I/O, we implemented a short OCaml script that reads an executable file as a list of bytes. This script then calls OCaml code generated by Coq's extraction feature, allowing our program to use the RockSalt parser. In order to be able to prove anything about these mentioned requirements, however, we needed to traverse the Portable Executable file format. 
+
+Among the challenges of traversing the PE file format was a severe lack of documentation. It is well known among the security community that the PE header provided by Microsoft isn't entirely accurate (security by obscurity), but that there are small discrepancies. Using the reverse engineering community's resources, we found a document explaining the structure of the PE file format\cite{PE:Misc}. Even then, traversing the PE file from what you manually read using a hex editor can be rather confusing. To address this critical issue, a well-known program among reverse engineers (CFF explorer) was used in tandem with a hex editor in order to manually perform the traversal just as would be required in Coq. 
+
+To instill some confidence in our traversal implementation, we made several examples of regular PE files that could be found on a typical windows machine, such as defragmentation software. Initially receiving errors from manually parsing compared to what the CFF explorer was showing, eventually the problem was traced down to a address translation issue. When an executable is on disk, it contains addresses that represent where a value will be at runtime, which is different from when it is on disk. In order to be able to compensate for the difference, the translation had to be written in Coq. These addresses are called Relative Virtual Addresses, and they are of the form\footnote{That is, the section header's data in question is actually dependent on the RVA's value.}: 
+
+\begin{math}
+Base Address + RVA - SectionHeaderVA + SectionHeaderPtrToRawData = AddrssInFile
+\end{math}
+
+Our implementation makes a few minor assumptions due to the fact that validating would have required insider help from Microsoft:
+\begin{itemize}
+\item that PE's in general conform to specifications closely enough to work
+\item that dishonest or maligned executables are discarded by the implemented REINS system
+\item that our address translations are accurate to what translations are performed by real systems.
+\end {itemize}
+Aside from these, after having successfully implemented the traversal functions, CFF explorer was used to check what was retrieved using the algorithms with good success.
+
+Lastly, among the steps included in our partial initialization of a PE header in Coq, we traverse the PE header with regards to the Import Address Table by retrieving information from the Optional Header's data directory and the Export Table and executable sections by manual traversal of the PE beyond the Optional Header.  
+
+\subsection{The REINS Verification Algorithm}
+
+The verification algorithm, as detailed in \cite{wartell12acsac}, consist of a fall-through disassembly of each executable section in the binary checking for the following properties:
+
+\begin{itemize}
+\item All executable sections reside in low memory.
+\item All exported symbols (including the program entry point) target low memory chunk boundaries.
+\item No disassembled instruction spans a chunk boundary.
+\item Static branches target low memory chunk boundaries.
+\item All computed jump instructions that do not reference the IAT are immediately preceded by the appropriate and-masking instruction.
+\item Computed jumps that read the IAT access a properly aligned IAT entry, and are preceded by an and-mask of the return address.
+\item There are no trap instructions.
+\end{itemize}
+
+These syntactic properties ensure that any unaligned instruction sequences concealed within untrusted, executable sections are not reachable at runtime, and that the REINS runtime library cannot be bypassed by manipulating return addresses or computed jump targets. Thus, at runtime, the rewritten executable cannot violate the security properties enforced by the REINS runtime library. We implemented this by modifying RockSalt's implementation of the NaCl verification algorithm, which is structurally similar. 
+
+
+\section{EVALUATION}
+
+We tested our implementation against a set of hand tailored binaries to serve as a proof of concept, as we have not had access the REINS rewriter, or any rewritten binaries. The test case executables and expected results corresponding to the various REINS properties, used as a basic sanity check, are shown in Table~\ref{tab:binaryTest}.
+ 
+\begin{table}
+\caption{Binary executables used for testing.}
+\label{tab:binaryTest}
+\centering
+\begin{tabular}{|c|c|c|}
+	\hline
+	REINS Property Violation & EXE & Result \\
+	\hline
+	\hline
+
+	CALL not at end of chunk boundary & callNotAtEnd & Fail \\
+	\hline
+
+	Disallowed Interrupt & interrupt & Fail \\
+	\hline
+
+	Disallowed System Call & syscall & Fail \\
+	\hline
+
+	Not masking the expected register on JMP & maskOnWrongReg & Fail \\
+	\hline
+
+	Not masking the expected register on CALL & noAndBeforeCall & Fail \\
+	\hline
+
+	Incorrect Mask  & wrongMask & Fail \\
+	\hline
+	
+	No Violations, No IAT call & safe & Pass \\
+	\hline
+	
+	Call through IAT, No Violations & callThruIAT & Pass \\
+	\hline
+
+\end{tabular}
+\end{table}
+
+\section{RELATED WORK}
+
+Binary ``sandboxing'' was first introduced as a technique for fault-isolation by Wahbe \emph{et al.} in \cite{Wahbe:1993:ESF:173668.168635}. 
+The key contribution of their work was to show that by directing all unsafe operations through a dedicated register, a jump to any instruction in the code region could be safe.
+However, their approach is not immediately applicable to CISC architectures, like the Intel IA-32, which include variable-length instructions.
+
+McCamant and Morrisett described an SFI technique applicable to CISC architectures as well as two optimizations not previously employed.  
+Their implementation, referred to as the Prototype IA-32 Transformation Tool for Software-based Fault Isolation Enabling Load-time Determinations (of safety), or better known as PittSFIeld \cite{McCamantM06}.
+
+Arguably the most well-known and distributed system is Native Client, a service provided for Google's Chrome browser that allows native executable code to be run directly in the context of the browser \cite{Yee09nativeclient:}.
+NaCl's contributions include an open source infrastructure for OS and browser-portable sandboxed x86 binary modules, support for advanced performance capabilities such as threads, SSE instructions, compiler intrinsics and hand-coded assembler.  
+Similar to PittSFIeld, NaCl requires untrusted code to be compiled with their specialized tool chain.  
+
+%As outlined in section 3, RockSalt consist of two major parts; an x86 model in Coq and an implementation of the NaCl checker with a proof of correctness.  
+%For brevity, we only reference key aspects of their system that relate to our work, and leave unrelated details as further investigation for the reader. 
+
+Coq-based systems are gaining traction as a means to guarantee desired correctness properties.
+For example, CompCert is a compiler that generates PowerPC, ARM and x86 assembly code from CompCert C, a large subset of the C programming language.
+% Written mostly within the specification language of the Coq proof assistant, and its correctness the fact that the generated assembly code is semantically equivalent to its source program was entirely proved within the Coq proof assistant.
+Written mostly in Coq, the CompCert compiler is proven to be correct; that is, the CompCert project leverages the power of Coq to prove that the assembly code generated by the compiler is semantically equivalent to the source program.
+
+%Many innovative accomplishments, ouside the scope of our project, have been made by Wartall \emph{et al.} on REINS.
+
+
+
+\section{FUTURE WORK}
+
+Our augmented x86 model is minimal; we do not yet handle floating-point instructions, system programming instructions, nor any of the MMX, SSEn, 3dNow! or IA-64 instructions.
+In addition, some sequences of pads are not correctly recognized.
+As section 4 suggest, our restricted model is sufficient for a subset of real executables, albeit a somewhat trivial subset.
+
+Although we have made great strides, a large requriement in moving forward, is a complete x86 model.  
+That is, we wish to extend our x86 model to include all IA-32 instructions such that any binary produced by the REINS rewriter is verifiable by our checker. 
+
+We would like a complete verifier correctness proof.
+Such a proof requires, as prerequisites, many auxiliary lemmas such as a formal proof of PE correctness.   
+We suspect that several other bugs have not yet been discovered, and recognize the need for further, more comprehensive, evaluation of our implementation.
+
+\section{ CONCLUSION}
+
+We have presented a formal model to serve as a foundation for a formally verified IRM and SFI checker. 
+This includes significant additions to the RockSalt abstract x86 model as well as a implementation, developed in Coq, of the REINS verifier.
+We hope this work will aid in the expansion of formal proofs of security on the x86 architecture.  
+
+\section*{Acknowledgements}
+We would like to thank Xavier Leroy \cite{Leroy:Misc} and Joseph Tassarotti \cite{Tassarotti:Misc} for the insight they provided on RockSalt.  
+
+\nocite {*}
+
+\bibliographystyle{plain}
+\bibliography{x86}
+\end{document}
+
+
+
+

@@ -1,0 +1,47 @@
+Verifying Reins in Coq
+
+Dependencies:
+
+Coq 8.3pl2 - 8.3pl5 (8.4 does not work)
+  http://coq.inria.fr/coq-8.3
+
+OCaml 3.12 or higher
+  http://caml.inria.fr/download.en.html
+
+Compiling:
+
+Go to reins-verifier-proof directory and run 'make'
+This compiles the Model, REINS, and Test folders.
+Compliation takes about an hour and is very resource (memory) intensive towards
+the end.
+
+Output:
+
+After compilation, a check.exe executable is created in the Test folder.
+Execute with the binary that needs to be checked as an input parameter.
+
+	example: ./check.exe maskOnWrongReg.exe
+
+The program reports either
+
+	- "fail" if the binary does not meet the constraints or
+	- "pass" if the binary has successfully been rewritten
+
+Included in the Test folder are some hand crafted test binaries that purposely
+pass or fail according to their name.
+	
+	callNotAtEnd: call instruction not at end of chunk boundary (fails)
+	callThruIAT: calling through an IAT address (passes)
+	interrupt & syscall: has these instructions (fails)
+	maskOnWrongReg: not anding the correct register before jmp/call (fails)
+	noAndBeforeCall: not anding the register before a call (fails)
+	safe: conforms to the constraints (passes)
+	wrongMask: has the mask 0xeffffff0 instead of 0x0ffffff0 (fails)
+
+Note: to work around some memory issues in Coq, the process of converting the
+grammars defined in Model/Decode.v and REINS/ReinsVerifierDFA.v to DFAs for
+efficient matching is done as a separate manual step. This conversion is done
+by DFACompiler.v, and the output is manually put in CompiledDFAs.v.
+DFACompiler.v is not part of the standard compilation process (i.e. it is not
+referenced in the Makefiles), but must be run any time any of the grammars are
+modified.
