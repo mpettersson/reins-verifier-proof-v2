@@ -12,7 +12,15 @@
 
 (** ReinsVerifierDFA.v:  
     This file contains definitions of the parsers used to build the DFAs
-    used in FastVerifier.
+    used in RockSalts FastVerifier and REINS ReinsVerifier.v .
+    
+    Page 7 of RockSalt - "In practice, calculating a DFA in this fashion
+    is almost as good as the usual construction [26], but avoids the 
+    need to formalize and reason about graphs. The degree to which we 
+    simplify regular expressions as we calculate derivatives determines 
+    how few states are left in the resulting DFA. In our case, the number 
+    of states is small enough (61 for the largest DFA) that we do not 
+    need to worry about further minimization." 
 *)
 
 
@@ -36,9 +44,12 @@ Import X86_PARSER.
 Import X86_BASE_PARSER.
 Require Import X86Syntax.
 
-(* In NaCl, ChunkSize is either 16 or 32 *)
+(* In NaCl, ChunkSize is either 16 or 32
+ * In RockSalt, ChunkSize was 32
+ * that is, longChunkSize was 5%nat *)
 Definition logChunkSize := 4%nat.
 Definition chunkSize := two_power_nat logChunkSize.
+(* lowMemZeroBits and lowMemCutoff were added in REINS *)
 Definition lowMemZeroBits := 4%nat.
 Definition lowMemCutoff := two_power_nat ((wordsize 31) - lowMemZeroBits)%nat. (* d = 2^28 *)
 Notation int8_of_nat n := (@repr 7 (Z_of_nat n)).

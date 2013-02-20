@@ -152,7 +152,7 @@ Ltac aligned_tac :=
 Lemma aligned_zdivide :
   forall z:Z, aligned (repr z) ->  Znumtheory.Zdivide chunkSize z.
 Proof. unfold aligned, aligned_bool. intros a H; apply Zeq_is_eq_bool in H.
-  apply Znumtheory.Zmod_divide. generalize chunkSize_gt_0. lia. 
+  apply Znumtheory.Zmod_divide. generalize chunkSize_gt_0. omega. 
   simpl in H. rewrite <- Zmod_mod_modulus_chunkSize in H. trivial.
 Qed.
 
@@ -441,15 +441,19 @@ Proof.
 Qed.
 
 
-(*** compiles to here ***)
+(*** used to compile to here ***)
 Section VERIFIER_CORR.
 
-  (* CHANGE *)
+
+  (* 20130219 - MCP - Added variables that are used in ReinsVerifier.v *)
   Variable non_cflow_dfa : DFA.
   Variable dir_cflow_dfa : DFA.
   Variable reinsjmp_nonIAT_dfa : DFA.
   Variable reinsjmp_IAT_or_RET_dfa : DFA.
+  Variable reinsjmp_IAT_CALL_dfa : DFA.
+  Variable reinsjmp_nonIAT_mask : parser (pair_t instruction_t instruction_t).
   Variable reinsjmp_IAT_or_RET_mask : parser (pair_t instruction_t instruction_t).
+  Variable reinsjmp_IAT_CALL_p : parser instruction_t.
 
   (* The trampoline region is a blessed region in the code segment. 
      It's inserted there by the loader and never checked by the validator.
@@ -458,33 +462,46 @@ Section VERIFIER_CORR.
      This variable marks the limit of the trampoline region *)
   Variable trampoline_limit : int32.
 
+  (* MCP - Updated checkProgram, checkExecSection, process_buffer_aux,
+   * and process_buffer to respect ReinsVerifier.checkProgram def *)
   Definition checkProgram := 
     ReinsVerifier.checkProgram 
        non_cflow_dfa
        dir_cflow_dfa
        reinsjmp_nonIAT_dfa
        reinsjmp_IAT_or_RET_dfa
+       reinsjmp_IAT_CALL_dfa
+       reinsjmp_nonIAT_mask
        reinsjmp_IAT_or_RET_mask.
+
   Definition checkExecSection :=
     ReinsVerifier.checkExecSection
        non_cflow_dfa
        dir_cflow_dfa
        reinsjmp_nonIAT_dfa
        reinsjmp_IAT_or_RET_dfa
+       reinsjmp_IAT_CALL_dfa
+       reinsjmp_nonIAT_mask
        reinsjmp_IAT_or_RET_mask.
+
   Definition process_buffer_aux := 
     ReinsVerifier.process_buffer_aux 
        non_cflow_dfa
        dir_cflow_dfa
        reinsjmp_nonIAT_dfa
        reinsjmp_IAT_or_RET_dfa
+       reinsjmp_IAT_CALL_dfa
+       reinsjmp_nonIAT_mask
        reinsjmp_IAT_or_RET_mask.
+
   Definition process_buffer := 
     ReinsVerifier.process_buffer 
        non_cflow_dfa
        dir_cflow_dfa
        reinsjmp_nonIAT_dfa
        reinsjmp_IAT_or_RET_dfa
+       reinsjmp_IAT_CALL_dfa
+       reinsjmp_nonIAT_mask
        reinsjmp_IAT_or_RET_mask.
 
   Fixpoint l2ll' {A} (n : nat) (l1 : list A) (l2 : list A) : list (list A) :=
@@ -580,6 +597,8 @@ Section VERIFIER_CORR.
       seg_regs_limits (rtl_mach_state s) = sregs_limits /\
       codeLoaded code s /\
       checkSegments s = true.
+
+  (* COMPILES TO HERE *)
 
   (* The invariant that should be satisfied between pseudo instructions*)
   (* CHANGE *)
