@@ -65,6 +65,18 @@ Definition bytes_to_word (msb : int16) (lsb : int16) : WORD :=
    Word.add (Word.mul msb (Word.repr 256)) lsb
 .
 
+(* 
+ * In REINS, we initially used a list of bytes as data 
+ * and naturals to reason about the data, for example 
+ * the old definition of parseByte was:
+ *
+ * Definition parseByte (data : list BYTE) (n : nat) : BYTE :=
+ *     nth n data (Word.repr 0).
+ *
+ * However, was irratatingly slow and prompted us to changed the 
+ * pile of bytes structre from a list of bytes to a list of list
+ * of bytes and use Z for indexing.  
+ *)
 Definition parseByte (data : list(list BYTE)) (z : Z) : BYTE :=
    let chunk := getChunk data z in
    let n := Z_to_nat (Zmod z block_size) in

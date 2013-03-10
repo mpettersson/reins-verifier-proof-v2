@@ -200,11 +200,18 @@ Section BUILT_DFAS.
 
 
   (* Note: it's important to specify the type of tokens as "list token_id", not
-     "list nat", even though token_id is defined to be nat. If a proof environment
-     has one value of type "list token_id" and the other of type "list nat", 
-     proof scripts such as rewrite or omega may fail since token_id needs to
-     be unfolded. *)
+   * "list nat", even though token_id is defined to be nat. If a proof environment
+   * has one value of type "list token_id" and the other of type "list nat", 
+   * proof scripts such as rewrite or omega may fail since token_id needs to
+   * be unfolded. *)
 
+  (* Note:  The format of sections were changed due to speed, memory, and crash 
+  *  concerns; what was a list of bytes is now a list of list of bytes.  Also note 
+  *  that each section contains bounds information that is checked against the low 
+  *  memory boundary. 
+  *  
+  *  Previously:
+  *  Fixpoint process_buffer_aux (loc: int32) (n: nat) (tokens:list token_id) *)
   Fixpoint process_buffer_aux (loc: int32) (n: nat) (tokens:list (list token_id))
     (curr_res: Int32Set.t * Int32Set.t * Int32Set.t * Int32Set.t) :=
     match n with
@@ -297,15 +304,20 @@ Section BUILT_DFAS.
     end.
 
   (* The idea here is, given a list of int8s representing the code,
-     we call process_buffer_aux with n := length of the (flattened)
-     list plus one for each sub-list; since each sub-list incurs one
-     recursive call, and each instruction is at least one byte long,
-     this should be enough calls to process_buffer_aux to process
-     everything in the buffer, without us having to worry about
-     termination proofs
-     Note: one way to avoid the n is would be to show each dfa consumes
-     at least one byte.
-     *)
+   *  we call process_buffer_aux with n := length of the (flattened)
+   *  list plus one for each sub-list; since each sub-list incurs one
+   *  recursive call, and each instruction is at least one byte long,
+   *  this should be enough calls to process_buffer_aux to process
+   *  everything in the buffer, without us having to worry about
+   *  termination proofs
+   *  Note: one way to avoid the n is would be to show each dfa consumes
+   *  at least one byte. *)
+
+  (* In the event that an executable section consists entirely of one-byte
+   * instructions, we should run (#of bytes) + (#of 3072-byte chunks) + 1 
+   * iterations of process_buffer_aux (1 per instruction, plus one per chunk 
+   * to continue to next chunk, plus one to finish up when the last byte 
+   * has been processed) *)
   Definition process_buffer (buffer: list (list int8)) :=
     process_buffer_aux
       (Word.repr 0)
@@ -384,8 +396,7 @@ Section BUILT_DFAS.
    * - IAT computed jumps have return addr masked and actually target the iat
    *     (reinsjmp_IAT_or_RET_mask + checkIATAddresses)
    * - Call instructions end on a chunk bounary
-   * - No trap instructions (will not parse)
-   *)
+   * - No trap instructions (will not parse) *)
   Definition checkProgram (data : list (list int8)) : (bool * Int32Set.t) :=
     let exec := getExecutableSections data in
     let iat := getIATBounds data in
@@ -419,4 +430,4 @@ Definition checkProgram' (data : list (list int8)) : (bool * Int32Set.t) :=
       reinsjmp_IAT_CALL_p
       data.
 
-Extraction "reinsverif.ml" checkProgram'.
+(* Extraction "reinsverif.ml" checkProgram'. *)
