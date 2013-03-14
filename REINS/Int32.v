@@ -87,7 +87,7 @@ Proof. apply int_eq_false_iff2. Qed.
 Lemma int32_minus_rewrite : forall x y,
   unsigned x >= unsigned y -> unsigned (x -32 y) = unsigned x - unsigned y.
 Proof. intros. unfold w32sub, sub. rewrite unsigned_repr2. trivial. 
-  generalize (unsigned_range x), (unsigned_range y). lia.
+  generalize (unsigned_range x), (unsigned_range y). omega.
 Qed.
 
 Remark Zmod_plus_eq_self : forall a b c, (a + b) mod c = a mod c -> b mod c = 0.
@@ -145,7 +145,7 @@ Proof. intros. apply inj_S. Qed.
 Hint Rewrite inj_S2 : nat_to_Z.
 
 Hint Rewrite inj_Zabs_nat : nat_to_Z.
-Hint Rewrite Zabs_eq using lia : nat_to_Z.
+Hint Rewrite Zabs_eq using omega: nat_to_Z.
 
 (* Converting hypothesis about nats to Z:
      * n1 = n2 ===> Z_of_nat n1 = Z_of_nat n2
@@ -213,12 +213,12 @@ Proof. intros; generalize (unsigned_range a), (unsigned_range b);
     unfold "+32", repr in H. simpl in H.
     assert ((unsigned a + unsigned b) mod w32modulus = 
               unsigned a + unsigned b - w32modulus) as H5.
-      apply Coqlib.Zmod_unique with (a:=1) ; lia.
-    rewrite H5 in H. lia.
+      apply Coqlib.Zmod_unique with (a:=1) ; omega.
+    rewrite H5 in H. omega.
   intros. simpl in H. rewrite Zplus_0_r in H.
     int32_to_Z_tac. unfold "+32", repr. simpl.
-    assert (0 <= unsigned a + unsigned b < w32modulus) by lia.
-    rewrite (Zmod_small _ _ H0). lia.
+    assert (0 <= unsigned a + unsigned b < w32modulus) by omega.
+    rewrite (Zmod_small _ _ H0). omega.
 Qed.
 
 Lemma noOverflow_2_iff : forall a b, 
@@ -226,11 +226,11 @@ Lemma noOverflow_2_iff : forall a b,
 Proof. intros; generalize (unsigned_range a), (unsigned_range b); 
   intros Ha Hb; unfold noOverflow; split; unfold "+32", repr; simpl.
   intros. apply Zmod_small. simpl in H.
-    lia.
+    omega.
   intros. 
     assert (0 <= unsigned a + unsigned b < w32modulus).
       rewrite <- H; apply Z_mod_lt. apply Word.modulus_pos.
-    lia.
+    omega.
 Qed.
 
 Lemma int32_add_rewrite : forall (a b:int32),
@@ -238,7 +238,7 @@ Lemma int32_add_rewrite : forall (a b:int32),
     -> unsigned (a +32 b) = unsigned a + unsigned b.
 Proof. intros. unfold "+32", repr. simpl.
   generalize (unsigned_range a) (unsigned_range b); intros.
-  rewrite Zmod_small by lia. trivial.
+  rewrite Zmod_small by omega. trivial.
 Qed.
 
 (** ** Tactics for noOverflow *)
@@ -275,7 +275,7 @@ Ltac all_to_Z_tac :=
   unfold RTL.size32 in *.
 
 Ltac int32_simplify := all_to_Z_tac; repeat autorewrite with int32_simpl_db in *.
-Ltac int32_prover := int32_simplify; lia.
+Ltac int32_prover := int32_simplify; omega.
 
 Ltac int32_simplify_in_goal := 
   nat_to_Z_in_goal; autorewrite with int32_simpl_db.
@@ -286,10 +286,10 @@ Ltac int32_simplify_in H :=
     (1) rewrites to (unsigned a + unsigned b) when
         (unsigned a + unsigned b < 2^32 holds
     (3) rewrites unsigned (repr z) to z when 0 <= z < 2^32 *)
-Hint Rewrite int32_add_rewrite using (lia || (int32_simplify_in_goal; lia))
+Hint Rewrite int32_add_rewrite using (omega || (int32_simplify_in_goal; omega))
   : int32_simpl_db.
-Hint Rewrite int32_minus_rewrite using lia : int32_simpl_db.
-Hint Rewrite Word.unsigned_repr2 using lia : int32_simpl_db.
+Hint Rewrite int32_minus_rewrite using omega : int32_simpl_db.
+Hint Rewrite Word.unsigned_repr2 using omega : int32_simpl_db.
 
 (** ** More lemmas about noOverflow *)
 Lemma checkNoOverflow_3_sound : forall (a b c:int32),
