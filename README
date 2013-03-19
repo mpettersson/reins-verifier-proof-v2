@@ -8,12 +8,38 @@ DEPENDECIES:
       http://caml.inria.fr/download.en.html
 
 
-COMPILING:
+COMPILING IN LINUX/MAC:
     Go to reins-verifier-proof directory and run 'make'
     This compiles the Model, REINS, and Test folders.
     Compliation takes about an hour and is very resource (memory) intensive towards
       the end.
 
+COMPILING IN WINDOWS:
+	I would strongly suggest that you install CYGWIN, thus allowing the 'make' 
+	command (See "COMPILING IN LINUX/MAC").  
+	However, if you insist on the hard way, you can compile each file in the 
+	following order.
+		Model:
+			coqc Maps.v
+			coqc Bits.v
+			coqc X86Syntax.v
+			coqc Monad.v
+			coqc Parser.v
+			coqc Decode.v
+			coqc RTL.v
+			coqc X86Semantcis.v
+			coqc CheckDeterministic.v
+		REINS:
+			coqc -I "../Model" Int32.v
+			coqc -I "../Model" PEFormat.v
+			coqc -I "../Model" PETraversal.v
+			coqc -I "../Model" ReinsVerifierDFA.v
+			coqc -I "../Model" CompiledDFAs.v
+			coqc -I "../Model" ReinsDFACorrectness.v
+			coqc -I "../Model" REINSjmp.v
+			coqc -I "../Model" X86Lemmas.v
+			coqc -I "../Model" ReinsVerifier.v
+			coqc -I "../Model" ReinsVerifierCorrectness.v
 
 OUTPUT:
     After compilation, a check.exe executable is created in the Test folder.
