@@ -1,0 +1,384 @@
+FPEFormat
+R2057:2060 Bits <> <> lib
+ind 2074:2079 <> vector
+constr 2108:2111 <> vnil
+constr 2147:2151 <> vcons
+R2083:2085 Coq.Init.Datatypes <> nat ind
+R2134:2139 PEFormat <> vector ind
+R2203:2208 PEFormat <> vector ind
+R2211:2211 Coq.Init.Datatypes <> S constr
+R2189:2194 PEFormat <> vector ind
+R2178:2180 Coq.Init.Datatypes <> nat ind
+R2238:2241 PEFormat <> vnil constr
+not 2229 <> :vector_scope:'[]'
+R2284:2288 PEFormat <> vcons constr
+not 2271 <> :vector_scope:x_'::'_x
+R2373:2378 PEFormat <> vector ind
+not 2359 <> :vector_scope:x_'['_x_']'
+def 2469:2475 <> vtolist
+R2493:2495 Coq.Init.Datatypes <> nat ind
+R2503:2508 PEFormat <> vector ind
+R2517:2520 Coq.Init.Datatypes <> list ind
+R2558:2559 PEFormat <> :vector_scope:'[]' not
+R2564:2566 Coq.Init.Datatypes <> nil constr
+R2583:2586 PEFormat <> :vector_scope:x_'::'_x not
+R2592:2595 Coq.Init.Datatypes <> cons constr
+R2600:2606 PEFormat <> vtolist def
+def 2632:2635 <> BYTE
+R2640:2643 Bits <> int8 def
+def 2657:2660 <> WORD
+R2665:2669 Bits <> int16 def
+def 2683:2687 <> DWORD
+R2692:2696 Bits <> int32 def
+ind 2710:2712 <> Ptr
+constr 2734:2736 <> ptr
+R2768:2770 PEFormat <> Ptr ind
+R2740:2744 PEFormat <> DWORD def
+constr 2816:2835 <> mkImageDataDirectory
+rec 2784:2804 <> _IMAGE_DATA_DIRECTORY
+proj 2840:2857 <> VirtualAddress_IDD
+proj 2869:2872 <> Size
+R2861:2865 PEFormat <> DWORD def
+R2876:2880 PEFormat <> DWORD def
+constr 2926:2946 <> mkImageOptionalHeader
+rec 2893:2914 <> _IMAGE_OPTIONAL_HEADER
+proj 2951:2955 <> Magic
+proj 2966:2983 <> MajorLinkerVersion
+proj 2994:3011 <> MinorLinkerVersion
+proj 3022:3031 <> SizeOfCode
+proj 3043:3063 <> SizeOfInitializedData
+proj 3075:3097 <> SizeOfUninitializedData
+proj 3109:3127 <> AddressOfEntryPoint
+proj 3139:3148 <> BaseOfCode
+proj 3160:3169 <> BaseOfData
+proj 3181:3189 <> ImageBase
+proj 3201:3216 <> SectionAlignment
+proj 3228:3240 <> FileAlignment
+proj 3252:3278 <> MajorOperatingSystemVersion
+proj 3289:3315 <> MinorOperatingSystemVersion
+proj 3326:3342 <> MajorImageVersion
+proj 3353:3369 <> MinorImageVersion
+proj 3380:3400 <> MajorSubsystemVersion
+proj 3411:3431 <> MinorSubsystemVersion
+proj 3442:3458 <> Win32VersionValue
+proj 3470:3480 <> SizeOfImage
+proj 3492:3504 <> SizeOfHeaders
+proj 3516:3523 <> CheckSum
+proj 3535:3543 <> Subsystem
+proj 3554:3571 <> DllCharacteristics
+proj 3582:3599 <> SizeOfStackReserve
+proj 3611:3627 <> SizeOfStackCommit
+proj 3639:3655 <> SizeOfHeapReserve
+proj 3667:3682 <> SizeOfHeapCommit
+proj 3694:3704 <> LoaderFlags
+proj 3716:3734 <> NumberOfRvaAndSizes
+proj 3746:3758 <> DataDirectory
+R2959:2962 PEFormat <> WORD def
+R2987:2990 PEFormat <> BYTE def
+R3015:3018 PEFormat <> BYTE def
+R3035:3039 PEFormat <> DWORD def
+R3067:3071 PEFormat <> DWORD def
+R3101:3105 PEFormat <> DWORD def
+R3131:3135 PEFormat <> DWORD def
+R3152:3156 PEFormat <> DWORD def
+R3173:3177 PEFormat <> DWORD def
+R3193:3197 PEFormat <> DWORD def
+R3220:3224 PEFormat <> DWORD def
+R3244:3248 PEFormat <> DWORD def
+R3282:3285 PEFormat <> WORD def
+R3319:3322 PEFormat <> WORD def
+R3346:3349 PEFormat <> WORD def
+R3373:3376 PEFormat <> WORD def
+R3404:3407 PEFormat <> WORD def
+R3435:3438 PEFormat <> WORD def
+R3462:3466 PEFormat <> DWORD def
+R3484:3488 PEFormat <> DWORD def
+R3508:3512 PEFormat <> DWORD def
+R3527:3531 PEFormat <> DWORD def
+R3547:3550 PEFormat <> WORD def
+R3575:3578 PEFormat <> WORD def
+R3603:3607 PEFormat <> DWORD def
+R3631:3635 PEFormat <> DWORD def
+R3659:3663 PEFormat <> DWORD def
+R3686:3690 PEFormat <> DWORD def
+R3708:3712 PEFormat <> DWORD def
+R3738:3742 PEFormat <> DWORD def
+R3783:3783 PEFormat <> :vector_scope:x_'['_x_']' not
+R3786:3786 PEFormat <> :vector_scope:x_'['_x_']' not
+R3762:3782 PEFormat <> _IMAGE_DATA_DIRECTORY rec
+constr 3997:4013 <> mkImageFileHeader
+rec 3968:3985 <> _IMAGE_FILE_HEADER
+proj 4018:4024 <> Machine
+proj 4035:4050 <> NumberOfSections
+proj 4061:4077 <> TimeDateStamp_IFH
+proj 4089:4108 <> PointerToSymbolTable
+proj 4160:4174 <> NumberOfSymbols
+proj 4186:4205 <> SizeOfOptionalHeader
+proj 4216:4234 <> Characteristics_IFH
+R4028:4031 PEFormat <> WORD def
+R4054:4057 PEFormat <> WORD def
+R4081:4085 PEFormat <> DWORD def
+R4112:4116 PEFormat <> DWORD def
+R4178:4182 PEFormat <> DWORD def
+R4209:4212 PEFormat <> WORD def
+R4238:4241 PEFormat <> WORD def
+constr 4281:4295 <> mkImageNtHeader
+rec 4254:4269 <> _IMAGE_NT_HEADER
+proj 4300:4308 <> Signature
+proj 4320:4329 <> FileHeader
+proj 4354:4367 <> OptionalHeader
+R4312:4316 PEFormat <> DWORD def
+R4333:4350 PEFormat <> _IMAGE_FILE_HEADER rec
+R4371:4392 PEFormat <> _IMAGE_OPTIONAL_HEADER rec
+constr 4434:4449 <> mkImageDosHeader
+rec 4405:4421 <> _IMAGE_DOS_HEADER
+proj 4454:4460 <> e_magic
+proj 4470:4475 <> e_cblp
+proj 4486:4489 <> e_cp
+proj 4500:4505 <> e_crlc
+proj 4516:4524 <> e_cparhdr
+proj 4535:4544 <> e_minalloc
+proj 4555:4564 <> e_maxalloc
+proj 4575:4578 <> e_ss
+proj 4589:4592 <> e_sp
+proj 4603:4608 <> e_csum
+proj 4619:4622 <> e_ip
+proj 4633:4636 <> e_cs
+proj 4647:4654 <> e_lfarlc
+proj 4665:4670 <> e_ovno
+proj 4681:4685 <> e_res
+proj 4699:4705 <> e_oemid
+proj 4716:4724 <> e_oeminfo
+proj 4735:4740 <> e_res2
+proj 4755:4762 <> e_lfanew
+R4463:4466 PEFormat <> WORD def
+R4479:4482 PEFormat <> WORD def
+R4493:4496 PEFormat <> WORD def
+R4509:4512 PEFormat <> WORD def
+R4528:4531 PEFormat <> WORD def
+R4548:4551 PEFormat <> WORD def
+R4568:4571 PEFormat <> WORD def
+R4582:4585 PEFormat <> WORD def
+R4596:4599 PEFormat <> WORD def
+R4612:4615 PEFormat <> WORD def
+R4626:4629 PEFormat <> WORD def
+R4640:4643 PEFormat <> WORD def
+R4658:4661 PEFormat <> WORD def
+R4674:4677 PEFormat <> WORD def
+R4693:4693 PEFormat <> :vector_scope:x_'['_x_']' not
+R4695:4695 PEFormat <> :vector_scope:x_'['_x_']' not
+R4689:4692 PEFormat <> WORD def
+R4709:4712 PEFormat <> WORD def
+R4728:4731 PEFormat <> WORD def
+R4748:4748 PEFormat <> :vector_scope:x_'['_x_']' not
+R4751:4751 PEFormat <> :vector_scope:x_'['_x_']' not
+R4744:4747 PEFormat <> WORD def
+R4766:4768 PEFormat <> Ptr ind
+R4770:4785 PEFormat <> _IMAGE_NT_HEADER rec
+def 4802:4829 <> IMAGE_DIRECTORY_ENTRY_EXPORT
+def 4848:4875 <> IMAGE_DIRECTORY_ENTRY_IMPORT
+def 4894:4923 <> IMAGE_DIRECTORY_ENTRY_RESOURCE
+def 4942:4972 <> IMAGE_DIRECTORY_ENTRY_EXCEPTION
+def 4990:5019 <> IMAGE_DIRECTORY_ENTRY_SECURITY
+def 5037:5067 <> IMAGE_DIRECTORY_ENTRY_BASERELOC
+def 5085:5111 <> IMAGE_DIRECTORY_ENTRY_DEBUG
+def 5129:5159 <> IMAGE_DIRECTORY_ENTRY_COPYRIGHT
+def 5177:5207 <> IMAGE_DIRECTORY_ENTRY_GLOBALPTR
+def 5225:5249 <> IMAGE_DIRECTORY_ENTRY_TLS
+def 5267:5299 <> IMAGE_DIRECTORY_ENTRY_LOAD_CONFIG
+def 5318:5351 <> IMAGE_DIRECTORY_ENTRY_BOUND_IMPORT
+def 5370:5394 <> IMAGE_DIRECTORY_ENTRY_IAT
+def 5413:5446 <> IMAGE_DIRECTORY_ENTRY_DELAY_IMPORT
+def 5465:5500 <> IMAGE_DIRECTORY_ENTRY_COM_DESCRIPTOR
+def 5519:5543 <> IMAGE_DIRECTORY_ENTRY_END
+def 5591:5596 <> LPBYTE
+R5601:5604 PEFormat <> BYTE def
+constr 5647:5665 <> mkImageImportByName
+rec 5615:5635 <> _IMAGE_IMPORT_BY_NAME
+proj 5670:5673 <> Hint
+proj 5684:5692 <> Name_IIBN
+R5677:5680 PEFormat <> WORD def
+R5700:5700 PEFormat <> :vector_scope:x_'['_x_']' not
+R5703:5703 PEFormat <> :vector_scope:x_'['_x_']' not
+R5696:5699 PEFormat <> BYTE def
+constr 5787:5802 <> mkImageThunkData
+rec 5759:5775 <> _IMAGE_THUNK_DATA
+proj 5806:5820 <> ForwarderString
+proj 5833:5840 <> Function
+proj 5856:5862 <> Ordinal
+proj 5874:5886 <> AddressOfData
+R5824:5829 PEFormat <> LPBYTE def
+R5844:5846 PEFormat <> Ptr ind
+R5848:5852 PEFormat <> DWORD def
+R5866:5870 PEFormat <> DWORD def
+R5890:5892 PEFormat <> Ptr ind
+R5894:5914 PEFormat <> _IMAGE_IMPORT_BY_NAME rec
+constr 5962:5984 <> mkImageImportDescriptor
+rec 5927:5950 <> _IMAGE_IMPORT_DESCRIPTOR
+proj 5989:6006 <> OriginalFirstThunk
+proj 6086:6102 <> TimeDateStamp_IID
+proj 6115:6128 <> ForwarderChain
+proj 6141:6148 <> Name_IID
+proj 6160:6169 <> FirstThunk
+R6010:6012 PEFormat <> Ptr ind
+R6014:6030 PEFormat <> _IMAGE_THUNK_DATA rec
+R6106:6110 PEFormat <> DWORD def
+R6132:6136 PEFormat <> DWORD def
+R6152:6156 PEFormat <> DWORD def
+R6193:6209 PEFormat <> _IMAGE_THUNK_DATA rec
+R6185:6189 PEFormat <> DWORD def
+constr 6256:6277 <> mkImageExportDirectory
+rec 6222:6244 <> _IMAGE_EXPORT_DIRECTORY
+proj 6282:6300 <> Characteristics_IED
+proj 6312:6324 <> TimeDateStamp
+proj 6336:6347 <> MajorVersion
+proj 6358:6369 <> MinorVersion
+proj 6380:6387 <> Name_IED
+proj 6399:6402 <> Base
+proj 6414:6430 <> NumberOfFunctions
+proj 6442:6454 <> NumberOfNames
+proj 6466:6483 <> AddressOfFunctions
+proj 6538:6551 <> AddressOfNames
+proj 6563:6583 <> AddressOfNameOrdinals
+R6304:6308 PEFormat <> DWORD def
+R6328:6332 PEFormat <> DWORD def
+R6351:6354 PEFormat <> WORD def
+R6373:6376 PEFormat <> WORD def
+R6391:6395 PEFormat <> DWORD def
+R6406:6410 PEFormat <> DWORD def
+R6434:6438 PEFormat <> DWORD def
+R6458:6462 PEFormat <> DWORD def
+R6487:6491 PEFormat <> DWORD def
+R6555:6559 PEFormat <> DWORD def
+R6587:6591 PEFormat <> DWORD def
+def 6652:6674 <> IMAGE_SIZEOF_SHORT_NAME
+constr 6722:6741 <> mkImageSectionHeader
+rec 6690:6710 <> _IMAGE_SECTION_HEADER
+proj 6746:6753 <> Name_ISH
+proj 6789:6816 <> PhysicalAddressORVirtualSize
+proj 6828:6845 <> VirtualAddress_ISH
+proj 6857:6869 <> SizeOfRawData
+proj 6881:6896 <> PointerToRawData
+proj 6908:6927 <> PointerToRelocations
+proj 6939:6958 <> PointerToLinenumbers
+proj 6970:6988 <> NumberOfRelocations
+proj 6999:7017 <> NumberOfLinenumbers
+proj 7028:7046 <> Characteristics_ISH
+R6761:6761 PEFormat <> :vector_scope:x_'['_x_']' not
+R6785:6785 PEFormat <> :vector_scope:x_'['_x_']' not
+R6762:6784 PEFormat <> IMAGE_SIZEOF_SHORT_NAME def
+R6757:6760 PEFormat <> BYTE def
+R6820:6824 PEFormat <> DWORD def
+R6849:6853 PEFormat <> DWORD def
+R6873:6877 PEFormat <> DWORD def
+R6900:6904 PEFormat <> DWORD def
+R6931:6935 PEFormat <> DWORD def
+R6962:6966 PEFormat <> DWORD def
+R6992:6995 PEFormat <> WORD def
+R7021:7024 PEFormat <> WORD def
+R7050:7054 PEFormat <> DWORD def
+def 7322:7342 <> IMAGE_SCN_TYPE_NO_PAD
+R7357:7361 Bits <> int32 def
+R7366:7374 Bits Word repr def
+def 7425:7442 <> IMAGE_SCN_CNT_CODE
+R7460:7464 Bits <> int32 def
+R7469:7477 Bits Word repr def
+def 7557:7586 <> IMAGE_SCN_CNT_INITIALIZED_DATA
+R7592:7596 Bits <> int32 def
+R7601:7609 Bits Word repr def
+def 7685:7716 <> IMAGE_SCN_CNT_UNINITIALIZED_DATA
+R7720:7724 Bits <> int32 def
+R7729:7737 Bits Word repr def
+def 7815:7833 <> IMAGE_SCN_LNK_OTHER
+R7850:7854 Bits <> int32 def
+R7859:7867 Bits Word repr def
+def 7918:7935 <> IMAGE_SCN_LNK_INFO
+R7953:7957 Bits <> int32 def
+R7962:7970 Bits Word repr def
+def 8040:8059 <> IMAGE_SCN_LNK_REMOVE
+R8075:8079 Bits <> int32 def
+R8084:8092 Bits Word repr def
+def 8143:8162 <> IMAGE_SCN_LNK_COMDAT
+R8178:8182 Bits <> int32 def
+R8187:8195 Bits Word repr def
+def 8282:8308 <> IMAGE_SCN_NO_DEFER_SPEC_EXC
+R8317:8321 Bits <> int32 def
+R8326:8334 Bits Word repr def
+def 8455:8469 <> IMAGE_SCN_GPREL
+R8490:8494 Bits <> int32 def
+R8499:8507 Bits Word repr def
+def 8609:8631 <> IMAGE_SCN_MEM_PURGEABLE
+R8644:8648 Bits <> int32 def
+R8653:8661 Bits Word repr def
+def 8712:8731 <> IMAGE_SCN_MEM_LOCKED
+R8747:8751 Bits <> int32 def
+R8756:8764 Bits Word repr def
+def 8815:8835 <> IMAGE_SCN_MEM_PRELOAD
+R8850:8854 Bits <> int32 def
+R8859:8867 Bits Word repr def
+def 8918:8939 <> IMAGE_SCN_ALIGN_1BYTES
+R8953:8957 Bits <> int32 def
+R8962:8970 Bits Word repr def
+def 9057:9078 <> IMAGE_SCN_ALIGN_2BYTES
+R9092:9096 Bits <> int32 def
+R9101:9109 Bits Word repr def
+def 9196:9217 <> IMAGE_SCN_ALIGN_4BYTES
+R9231:9235 Bits <> int32 def
+R9240:9248 Bits Word repr def
+def 9335:9356 <> IMAGE_SCN_ALIGN_8BYTES
+R9370:9374 Bits <> int32 def
+R9379:9387 Bits Word repr def
+def 9474:9496 <> IMAGE_SCN_ALIGN_16BYTES
+R9509:9513 Bits <> int32 def
+R9518:9526 Bits Word repr def
+def 9614:9636 <> IMAGE_SCN_ALIGN_32BYTES
+R9649:9653 Bits <> int32 def
+R9658:9666 Bits Word repr def
+def 9754:9776 <> IMAGE_SCN_ALIGN_64BYTES
+R9789:9793 Bits <> int32 def
+R9798:9806 Bits Word repr def
+def 9894:9917 <> IMAGE_SCN_ALIGN_128BYTES
+R9929:9933 Bits <> int32 def
+R9938:9946 Bits Word repr def
+def 10035:10058 <> IMAGE_SCN_ALIGN_256BYTES
+R10070:10074 Bits <> int32 def
+R10079:10087 Bits Word repr def
+def 10176:10199 <> IMAGE_SCN_ALIGN_512BYTES
+R10211:10215 Bits <> int32 def
+R10220:10228 Bits Word repr def
+def 10317:10341 <> IMAGE_SCN_ALIGN_1024BYTES
+R10352:10356 Bits <> int32 def
+R10361:10369 Bits Word repr def
+def 10459:10483 <> IMAGE_SCN_ALIGN_2048BYTES
+R10494:10498 Bits <> int32 def
+R10503:10511 Bits Word repr def
+def 10601:10625 <> IMAGE_SCN_ALIGN_4096BYTES
+R10636:10640 Bits <> int32 def
+R10645:10653 Bits Word repr def
+def 10743:10767 <> IMAGE_SCN_ALIGN_8192BYTES
+R10778:10782 Bits <> int32 def
+R10787:10795 Bits Word repr def
+def 10885:10909 <> IMAGE_SCN_LNK_NRELOC_OVFL
+R10920:10924 Bits <> int32 def
+R10929:10937 Bits Word repr def
+def 11017:11041 <> IMAGE_SCN_MEM_DISCARDABLE
+R11052:11056 Bits <> int32 def
+R11061:11069 Bits Word repr def
+def 11136:11159 <> IMAGE_SCN_MEM_NOT_CACHED
+R11171:11175 Bits <> int32 def
+R11180:11188 Bits Word repr def
+def 11255:11277 <> IMAGE_SCN_MEM_NOT_PAGED
+R11290:11294 Bits <> int32 def
+R11299:11307 Bits Word repr def
+def 11373:11392 <> IMAGE_SCN_MEM_SHARED
+R11408:11412 Bits <> int32 def
+R11417:11425 Bits Word repr def
+def 11499:11519 <> IMAGE_SCN_MEM_EXECUTE
+R11534:11538 Bits <> int32 def
+R11543:11551 Bits Word repr def
+def 11617:11634 <> IMAGE_SCN_MEM_READ
+R11652:11656 Bits <> int32 def
+R11661:11669 Bits Word repr def
+def 11731:11749 <> IMAGE_SCN_MEM_WRITE
+R11766:11770 Bits <> int32 def
+R11775:11783 Bits Word repr def
