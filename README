@@ -20,6 +20,8 @@ COMPILING IN WINDOWS:
 	However, if you insist on the hard way, you can compile each file in the 
 	following order.
 		Model:
+			coqc Coqlib.v
+			coqc Tacs.v
 			coqc Maps.v
 			coqc Bits.v
 			coqc X86Syntax.v
