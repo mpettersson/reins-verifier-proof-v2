@@ -211,7 +211,8 @@ Section BUILT_DFAS.
   *  memory boundary. 
   *  
   *  Previously:
-  *  Fixpoint process_buffer_aux (loc: int32) (n: nat) (tokens:list token_id) *)
+  *  Fixpoint process_buffer_aux (loc: int32) (n: nat) (tokens:list token_id)
+  *    (curr_res: Int32Set.t * Int32Set.t) := etc..... *)
   Fixpoint process_buffer_aux (loc: int32) (n: nat) (tokens:list (list token_id))
     (curr_res: Int32Set.t * Int32Set.t * Int32Set.t * Int32Set.t) :=
     match n with

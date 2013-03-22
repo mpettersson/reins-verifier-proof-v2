@@ -441,11 +441,9 @@ Proof.
 Qed.
 
 
-(*** used to compile to here ***)
 Section VERIFIER_CORR.
 
 
-  (* 20130219 - MCP - Added variables that are used in ReinsVerifier.v *)
   Variable non_cflow_dfa : DFA.
   Variable dir_cflow_dfa : DFA.
   Variable reinsjmp_nonIAT_dfa : DFA.
@@ -462,8 +460,6 @@ Section VERIFIER_CORR.
      This variable marks the limit of the trampoline region *)
   Variable trampoline_limit : int32.
 
-  (* MCP - Updated checkProgram, checkExecSection, process_buffer_aux,
-   * and process_buffer to respect ReinsVerifier.checkProgram def *)
   Definition checkProgram := 
     ReinsVerifier.checkProgram 
        non_cflow_dfa
@@ -548,11 +544,6 @@ Section VERIFIER_CORR.
 
 
   (* Checks whether the memory of s starting at addr_offset is equal to buffer *)
-  (* In RockSalt:
-  Definition eqMemBuffer (buffer: list int8) (s: rtl_state) (addr_offset: int32) :=
-    Z_of_nat (length buffer) <= w32modulus /\
-    (forall i, (i < length buffer)%nat
-      -> nth i buffer Word.zero = (AddrMap.get (addr_offset +32_n i) (rtl_memory s))).*)
   Definition eqMemBuffer (buffer: list (list int8)) (s: rtl_state) (addr_offset: int32) :=
     Z_of_nat (length buffer) <= w32modulus /\
     (forall i, (i < (length buffer))%nat
@@ -562,10 +553,6 @@ Section VERIFIER_CORR.
   (* note: needed adjustments if consider the trampoline area *)
   (* note: the range of addresses in the code segment is [CStart s, CStart s + Climit s],
      the length of the code segment is CLimit s + 1 *)
-  (* In RockSalt:
-  Definition codeLoaded (buffer: list int8) (s:rtl_state) := 
-    eqMemBufferRockSalt buffer s (CStart s) /\ 
-    Z_of_nat (length buffer) = unsigned (CLimit s) + 1. *)
   Definition codeLoaded (buffer: list (list int8)) (s:rtl_state) := 
     eqMemBuffer buffer s (CStart s) /\ 
     Z_of_nat (length buffer) = unsigned (CLimit s) + 1.
@@ -608,10 +595,8 @@ Section VERIFIER_CORR.
       codeLoaded (l2ll code) s /\
       checkSegments s = true.
 
-  (* COMPILES TO HERE *)
-
+ 
   (* The invariant that should be satisfied between pseudo instructions*)
-  (* CHANGE *)
   Definition safeState (s:rtl_state) (inv:Inv) :=
     let (sregs,  code) := inv in 
     let cpRes := checkProgram' (l2ll code) in
@@ -670,6 +655,7 @@ Section VERIFIER_CORR.
         goodJmpTarget (default_pc +32 disp) startAddrs
       | _ => false
     end.
+
 
   (** * Fast verifier correctness proof *)
   
@@ -798,7 +784,6 @@ Section VERIFIER_CORR.
 
 
   (** ** Properties of dfa_recognize *)
-  (*  *)
   Local Ltac dfaprover :=
      simtuition ltac:(auto with *); autorewrite with dfaRecDB in *;
        rewriter; simtuition ltac:(auto with *).
@@ -1152,11 +1137,17 @@ Section VERIFIER_CORR.
   Hint Rewrite Int32Set.diff_spec : pbDB.
   Hint Rewrite Int32SetFacts.empty_iff : pbDB.
 
+(* TODO *)
+(* After spending an hour on trying to change this, I noticed that it's only used
+   in process_buffer_aux_nil_contra, which was commented out in RockSalt, so 
+   I will come back to this later. *)
+(*
   Lemma process_buffer_aux_nil: forall start n currStartAddrs currJmpTargets,
     process_buffer_aux start n nil (currStartAddrs, currJmpTargets) = 
     Some (currStartAddrs, currJmpTargets).
   Proof. destruct n; auto. Qed.
-  Hint Rewrite process_buffer_aux_nil : pbDB.
+  Hint Rewrite process_buffer_aux_nil : pbDB. 
+*)
 
 (*
   Lemma process_buffer_aux_nil_contra :
@@ -1170,7 +1161,8 @@ Section VERIFIER_CORR.
 *)
 
   (** a special tactic for performing case analysis over process_buffer_aux *)
-  (* CHANGE *)
+  (* I changed MOST of it, but until I use it I'm not sure how sound it is,
+     that is, it may requrie more changes due to our list of list change*)
   Ltac process_buffer_aux_Sn_tac := 
     match goal with
       | [H: process_buffer_aux ?start (S ?n) ?tokens (?cSA, ?cJT)
@@ -1187,7 +1179,15 @@ Section VERIFIER_CORR.
                      let dfa := fresh "d2" in let len := fresh "len2" in 
                        let remaining := fresh "remaining2" in
                          remember_rev X as dfa; destruct dfa as [(len, remaining)|]
-                   | dfa_recognize _ nacljmp_dfa ?T => 
+                   | dfa_recognize _ reinsjmp_nonIAT_dfa ?T => 
+                     let dfa := fresh "d3" in let len := fresh "len3" in 
+                       let remaining := fresh "remaining3" in
+                         remember_rev X as dfa; destruct dfa as [(len, remaining)|]
+                   | dfa_recognize _ reinsjmp_IAT_or_RET_dfa ?T => 
+                     let dfa := fresh "d3" in let len := fresh "len3" in 
+                       let remaining := fresh "remaining3" in
+                         remember_rev X as dfa; destruct dfa as [(len, remaining)|]
+                   | dfa_recognize _ reinsjmp_IAT_CALL_dfa ?T => 
                      let dfa := fresh "d3" in let len := fresh "len3" in 
                        let remaining := fresh "remaining3" in
                          remember_rev X as dfa; destruct dfa as [(len, remaining)|]
@@ -1207,7 +1207,7 @@ Section VERIFIER_CORR.
 
   (* Some arithmetic facts used many times in the proofs about process_buffer *)
   Lemma process_buffer_arith_facts : 
-    forall start len (tokens remaining:list token_id),
+    forall start len (tokens remaining:list (list token_id)),
     noOverflow (start :: int32_of_nat (length tokens -1)%nat :: nil)
       -> Z_of_nat (length tokens) <= w32modulus
       -> (length tokens >=1)%nat
@@ -1217,8 +1217,9 @@ Section VERIFIER_CORR.
          noOverflow ((start +32_n len)
            :: int32_of_nat (length remaining - 1) :: nil) /\
          Z_of_nat (length remaining) <= w32modulus.
-  Proof. intros. int32_simplify. lia. Qed.
+  Proof. intros. int32_simplify. omega. Qed.
 
+(* Original (bc I might need it if I mess up my working copy...)
   Lemma process_buffer_aux_addrRange :
    forall n start tokens currStartAddrs currJmpTargets allStartAddrs allJmpTargets pc,
     process_buffer_aux start n tokens (currStartAddrs, currJmpTargets) =
@@ -1227,6 +1228,28 @@ Section VERIFIER_CORR.
       -> Z_of_nat (length tokens) <= w32modulus
       -> Int32Set.In pc (Int32Set.diff allStartAddrs currStartAddrs)
       -> unsigned start <= unsigned pc < unsigned start + Z_of_nat (length tokens).
+*)
+
+
+  Lemma process_buffer_aux_addrRange :
+   forall n start tokens curr_res currStartAddrs currJmpTargets allStartAddrs allJmpTargets pc,
+    process_buffer_aux start n tokens curr_res =
+      Some(allStartAddrs, allJmpTargets)
+      -> noOverflow (start :: int32_of_nat (length tokens - 1) :: nil)
+      -> Z_of_nat (length tokens) <= w32modulus
+      -> Int32Set.In pc (Int32Set.diff allStartAddrs currStartAddrs)
+      -> unsigned start <= unsigned pc < unsigned start + Z_of_nat (length tokens).
+
+  Lemma process_buffer_aux_addrRange :
+   forall n start tokens start_instrs check_list iat_check_list call_check_list allStartAddrs allJmpTargets pc,
+    process_buffer_aux start n tokens (start_instrs, check_list, iat_check_list, call_check_list) =
+      (Some(allStartAddrs, allJmpTargets), None, None, None, None)
+      -> noOverflow (start :: int32_of_nat (length tokens - 1) :: nil)
+      -> Z_of_nat (length tokens) <= w32modulus
+      -> Int32Set.In pc (Int32Set.diff allStartAddrs start_instrs)
+      -> unsigned start <= unsigned pc < unsigned start + Z_of_nat (length tokens).
+
+
   Proof. induction n. intros.
     Case "n=0". intros. destruct tokens; pbprover.
     Case "S n". intros.
@@ -1242,20 +1265,20 @@ Section VERIFIER_CORR.
            use_lemma dfa_recognize_inv by eassumption. simplHyp.
            use_lemma process_buffer_arith_facts by eassumption. simplHyp.
            apply IHn with (pc:=pc) in H; try (assumption || omega). clear IHn. 
-           int32_simplify. lia.
+           int32_simplify. omega.
         SSSCase "non_cflow_dfa matches". clear Hd2 Hd3.
            assert (length remaining1 > 0)%nat by (destruct remaining1; pbprover).
            use_lemma dfa_recognize_inv by eassumption. simplHyp.
            use_lemma process_buffer_arith_facts by eassumption. simplHyp.
            apply IHn with (pc:=pc) in H; try (assumption || omega). clear IHn.
-           int32_simplify. lia.
+           int32_simplify. omega.
         SSSCase "dir_cflow_dfa matches". clear Hd1 Hd3.
            destruct_head in H; try discriminate.
            assert (length remaining2 > 0)%nat by (destruct remaining2; pbprover).
            use_lemma dfa_recognize_inv by eassumption. simplHyp.
            use_lemma process_buffer_arith_facts by eassumption. simplHyp.
            apply IHn with (pc:=pc) in H; try (assumption || omega). clear IHn.
-           int32_simplify. lia.
+           int32_simplify. omega.
   Qed.
 
   Lemma process_buffer_addrRange : forall buffer startAddrs jmpTargets pc,
@@ -1582,7 +1605,7 @@ Section VERIFIER_CORR.
       int32_of_nat (length (List.map byte2token buffer) - 1) :: nil)).
       rewrite H10. 
       destruct buffer as [| b buffer'].
-        simpl. int32_simplify. rewrite int32_modulus_constant. simpl. lia.
+        simpl. int32_simplify. rewrite int32_modulus_constant. simpl. omega.
         assert (length (b::buffer') >= 1)%nat by (simpl; omega).
         int32_prover.
     apply process_buffer_aux_inversion with (pc:=pc) in H;
@@ -1643,7 +1666,7 @@ Section VERIFIER_CORR.
   Opaque parse_instr.
 
   Remark fetchSize_lt_modulus : 15 <= w32modulus.
-  Proof. rewrite int32_modulus_constant. lia. Qed.
+  Proof. rewrite int32_modulus_constant. omega. Qed.
 
   Theorem fetch_instr_code_inv : forall s1 s2 s1' pc pre i len,
     eqCodeRegion s1 s2
