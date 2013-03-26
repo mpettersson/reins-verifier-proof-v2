@@ -14,6 +14,7 @@ COMPILING IN LINUX/MAC:
     Compliation takes about an hour and is very resource (memory) intensive towards
       the end.
 
+
 COMPILING IN WINDOWS:
 	I would strongly suggest that you install CYGWIN, thus allowing the 'make' 
 	command (See "COMPILING IN LINUX/MAC").  
@@ -42,6 +43,7 @@ COMPILING IN WINDOWS:
 			coqc -I "../Model" X86Lemmas.v
 			coqc -I "../Model" ReinsVerifier.v
 			coqc -I "../Model" ReinsVerifierCorrectness.v
+
 
 OUTPUT:
     After compilation, a check.exe executable is created in the Test folder.
