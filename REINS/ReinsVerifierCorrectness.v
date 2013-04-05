@@ -478,7 +478,8 @@ Section VERIFIER_CORR.
        reinsjmp_IAT_or_RET_dfa
        reinsjmp_IAT_CALL_dfa
        reinsjmp_nonIAT_mask
-       reinsjmp_IAT_or_RET_mask.
+       reinsjmp_IAT_or_RET_mask
+       reinsjmp_IAT_CALL_p.
 
   Definition process_buffer_aux := 
     ReinsVerifier.process_buffer_aux 
@@ -488,7 +489,8 @@ Section VERIFIER_CORR.
        reinsjmp_IAT_or_RET_dfa
        reinsjmp_IAT_CALL_dfa
        reinsjmp_nonIAT_mask
-       reinsjmp_IAT_or_RET_mask.
+       reinsjmp_IAT_or_RET_mask
+       reinsjmp_IAT_CALL_p.
 
   Definition process_buffer := 
     ReinsVerifier.process_buffer 
@@ -498,7 +500,8 @@ Section VERIFIER_CORR.
        reinsjmp_IAT_or_RET_dfa
        reinsjmp_IAT_CALL_dfa
        reinsjmp_nonIAT_mask
-       reinsjmp_IAT_or_RET_mask.
+       reinsjmp_IAT_or_RET_mask
+       reinsjmp_IAT_CALL_p.
 
   Fixpoint l2ll' {A} (n : nat) (l1 : list A) (l2 : list A) : list (list A) :=
     match l1 with
@@ -558,12 +561,13 @@ Section VERIFIER_CORR.
     Z_of_nat (length buffer) = unsigned (CLimit s) + 1.
 
 
-  (* todo: deal with trampolines
-  (* Checks if the buffer agrees with the code regon in the state*)
-  Definition eqCode_after_trampoline (buffer: list int8) (r: rtl_state) :=
+  (* todo: deal with trampolines *)
+  (* Checks if the buffer agrees with the code regon in the state *)
+
+  Definition eqCode_after_trampoline (buffer: list (list int8)) (r: rtl_state) :=
     eqMemBuffer buffer r ((Word.add (CStart r) trampoline_limit)) /\
       ltu trampoline_limit (CLimit r) = true /\
-      trampoline_limit +32_n (length buffer) = CLimit r.*)
+      trampoline_limit +32_n (length buffer) = CLimit r.
 
 
   (** Check (1) segments do not wrap around the 32-bit address space;
@@ -583,7 +587,7 @@ Section VERIFIER_CORR.
 
   (* Invariants include the segment register starts and limits, and the code *)
   Definition Inv := 
-     (fmap segment_register int32 * fmap segment_register int32 * list int8)%type.
+     (fmap segment_register int32 * fmap segment_register int32 * list (list int8))%type.
 
   (* An appropriate state is one that segment registers are the same as the initial
      state and code is the same as the initial state *)
@@ -592,14 +596,14 @@ Section VERIFIER_CORR.
     let (sregs_starts, sregs_limits) := sregs in
       seg_regs_starts (rtl_mach_state s) = sregs_starts /\
       seg_regs_limits (rtl_mach_state s) = sregs_limits /\
-      codeLoaded (l2ll code) s /\
+      codeLoaded code s /\
       checkSegments s = true.
 
  
   (* The invariant that should be satisfied between pseudo instructions*)
   Definition safeState (s:rtl_state) (inv:Inv) :=
     let (sregs,  code) := inv in 
-    let cpRes := checkProgram' (l2ll code) in
+    let cpRes := checkProgram' code in
       appropState s inv /\
       fst cpRes = true /\
       (Int32Set.In (PC s) (snd cpRes) \/ ~ inBoundCodeAddr (PC s) s).
@@ -657,9 +661,10 @@ Section VERIFIER_CORR.
     end.
 
 
-  (** * Fast verifier correctness proof *)
+  (** * REINS Verifier Correctness Proof *)
   
   (** ** Auxliary lemmas about lists, skipn, and firstn *)
+  (* NOTE:  Due to the list of list change, additional lemmas may need to be added.  *)
 
   Lemma nth_nil : forall (A:Type) n (default:A),
     nth n nil default = default.
@@ -1130,24 +1135,23 @@ Section VERIFIER_CORR.
   (** ** Properties of process_buffer *)
 
   (* process buffer prover *)
-  (*Local Ltac pbprover :=
+  Local Ltac pbprover :=
     simtuition ltac:(auto with arith zarith); autorewrite with pbDB in *; 
-      rewriter; simtuition ltac:(auto with arith zarith). *)
+      rewriter; simtuition ltac:(auto with arith zarith). 
   
   Hint Rewrite Int32Set.diff_spec : pbDB.
   Hint Rewrite Int32SetFacts.empty_iff : pbDB.
 
-(* TODO *)
-(* After spending an hour on trying to change this, I noticed that it's only used
-   in process_buffer_aux_nil_contra, which was commented out in RockSalt, so 
-   I will come back to this later. *)
-(*
-  Lemma process_buffer_aux_nil: forall start n currStartAddrs currJmpTargets,
-    process_buffer_aux start n nil (currStartAddrs, currJmpTargets) = 
-    Some (currStartAddrs, currJmpTargets).
-  Proof. destruct n; auto. Qed.
+  Lemma process_buffer_aux_nil: forall start n start_instrs check_list iat_check_list call_check_list,
+    process_buffer_aux start n nil (start_instrs, check_list, iat_check_list, call_check_list) = 
+    Some (start_instrs, check_list, iat_check_list, call_check_list).
+  Proof. Admitted.
+(*  TODO PROOF - Will come back and fix.
+  Proof. destruct n; auto. Qed. *)
+  
+  
   Hint Rewrite process_buffer_aux_nil : pbDB. 
-*)
+
 
 (*
   Lemma process_buffer_aux_nil_contra :
@@ -1162,7 +1166,7 @@ Section VERIFIER_CORR.
 
   (** a special tactic for performing case analysis over process_buffer_aux *)
   (* I changed MOST of it, but until I use it I'm not sure how sound it is,
-     that is, it may requrie more changes due to our list of list change*)
+   * that is, it may requrie more changes due to our list of list change. *)  
   Ltac process_buffer_aux_Sn_tac := 
     match goal with
       | [H: process_buffer_aux ?start (S ?n) ?tokens (?cSA, ?cJT)
@@ -1219,37 +1223,20 @@ Section VERIFIER_CORR.
          Z_of_nat (length remaining) <= w32modulus.
   Proof. intros. int32_simplify. omega. Qed.
 
-(* Original (bc I might need it if I mess up my working copy...)
-  Lemma process_buffer_aux_addrRange :
-   forall n start tokens currStartAddrs currJmpTargets allStartAddrs allJmpTargets pc,
-    process_buffer_aux start n tokens (currStartAddrs, currJmpTargets) =
-      Some(allStartAddrs, allJmpTargets)
-      -> noOverflow (start :: int32_of_nat (length tokens - 1) :: nil)
-      -> Z_of_nat (length tokens) <= w32modulus
-      -> Int32Set.In pc (Int32Set.diff allStartAddrs currStartAddrs)
-      -> unsigned start <= unsigned pc < unsigned start + Z_of_nat (length tokens).
-*)
-
 
   Lemma process_buffer_aux_addrRange :
-   forall n start tokens curr_res currStartAddrs currJmpTargets allStartAddrs allJmpTargets pc,
-    process_buffer_aux start n tokens curr_res =
-      Some(allStartAddrs, allJmpTargets)
-      -> noOverflow (start :: int32_of_nat (length tokens - 1) :: nil)
-      -> Z_of_nat (length tokens) <= w32modulus
-      -> Int32Set.In pc (Int32Set.diff allStartAddrs currStartAddrs)
-      -> unsigned start <= unsigned pc < unsigned start + Z_of_nat (length tokens).
-
-  Lemma process_buffer_aux_addrRange :
-   forall n start tokens start_instrs check_list iat_check_list call_check_list allStartAddrs allJmpTargets pc,
+   forall n start tokens start_instrs check_list iat_check_list call_check_list 
+          all_start_instrs all_check_list all_iat_check_list all_call_check_list pc,
     process_buffer_aux start n tokens (start_instrs, check_list, iat_check_list, call_check_list) =
-      (Some(allStartAddrs, allJmpTargets), None, None, None, None)
+      Some(all_start_instrs, all_check_list, all_iat_check_list, all_call_check_list)
       -> noOverflow (start :: int32_of_nat (length tokens - 1) :: nil)
       -> Z_of_nat (length tokens) <= w32modulus
-      -> Int32Set.In pc (Int32Set.diff allStartAddrs start_instrs)
+      -> Int32Set.In pc (Int32Set.diff all_start_instrs start_instrs)
       -> unsigned start <= unsigned pc < unsigned start + Z_of_nat (length tokens).
 
-
+  Proof.
+  Admitted.
+(*  TODO PROOF - I want to get a little further before fixing this.
   Proof. induction n. intros.
     Case "n=0". intros. destruct tokens; pbprover.
     Case "S n". intros.
@@ -1280,13 +1267,16 @@ Section VERIFIER_CORR.
            apply IHn with (pc:=pc) in H; try (assumption || omega). clear IHn.
            int32_simplify. omega.
   Qed.
+*)
 
-  Lemma process_buffer_addrRange : forall buffer startAddrs jmpTargets pc,
-    process_buffer buffer = Some (startAddrs, jmpTargets)
+  Lemma process_buffer_addrRange : forall buffer start_instrs check_list iat_check_list call_check_list pc,
+    process_buffer buffer = Some (start_instrs, check_list, iat_check_list, call_check_list)
       -> Z_of_nat (length buffer) <= w32modulus
-      -> Int32Set.In pc startAddrs
+      -> Int32Set.In pc start_instrs
       -> 0 <= unsigned pc < Z_of_nat (length buffer).
-  Proof. intros. unfold process_buffer, FastVerifier.process_buffer in H.
+  Proof. Admitted.
+(* TODO PROOF 
+  Proof. intros. unfold process_buffer, ReinsVerifier.process_buffer in H.
     assert (length (List.map byte2token buffer) = length buffer) as H10
       by (apply list_length_map).
     assert (noOverflow (repr 0 ::
@@ -1300,6 +1290,7 @@ Section VERIFIER_CORR.
       [idtac | assumption | (rewrite list_length_map; trivial) | pbprover].
     rewrite list_length_map in *; int32_prover.
   Qed.
+*)
 
   Hint Rewrite Zminus_diag:pbDB.
   
@@ -1310,11 +1301,16 @@ Section VERIFIER_CORR.
   Qed.
 
   Lemma process_buffer_aux_subset : 
-    forall n start tokens currStartAddrs currJmpTargets allStartAddrs allJmpTargets,
-      process_buffer_aux start n tokens (currStartAddrs, currJmpTargets) =
-        Some (allStartAddrs, allJmpTargets)
-        -> Int32Set.Subset currStartAddrs allStartAddrs /\
-           Int32Set.Subset currJmpTargets allJmpTargets.
+    forall n start tokens start_instrs check_list iat_check_list call_check_list 
+           all_start_instrs all_check_list all_iat_check_list all_call_check_list,
+      process_buffer_aux start n tokens (start_instrs, check_list, iat_check_list, call_check_list) =
+        Some (all_start_instrs, all_check_list, all_iat_check_list, all_call_check_list)
+        -> Int32Set.Subset start_instrs all_start_instrs /\
+           Int32Set.Subset check_list all_check_list /\
+           Int32Set.Subset iat_check_list all_iat_check_list /\
+           Int32Set.Subset call_check_list all_call_check_list.
+  Proof. Admitted.
+(* TODO PROOF - Ya ya, I'll fix it...
   Proof. induction n. intros.
     Case "n=0". intros. destruct tokens; pbprover.
     Case "S n". intros.
@@ -1348,13 +1344,17 @@ Section VERIFIER_CORR.
             eapply Int32SetFacts.Subset_trans; [idtac | eassumption].
               apply Int32Set_subset_add.
   Qed.
+*)
 
   Lemma process_buffer_aux_start_in : 
-    forall n start tokens currStartAddrs currJmpTargets allStartAddrs allJmpTargets,
-      process_buffer_aux start n tokens (currStartAddrs, currJmpTargets) =
-        Some(allStartAddrs, allJmpTargets)
+    forall n start tokens start_instrs check_list iat_check_list call_check_list 
+           all_start_instrs all_check_list all_iat_check_list all_call_check_list,
+      process_buffer_aux start n tokens (start_instrs, check_list, iat_check_list, call_check_list) =
+        Some(all_start_instrs, all_check_list, all_iat_check_list, all_call_check_list)
         -> (length (tokens) > 0)%nat
-        -> Int32Set.In start allStartAddrs.
+        -> Int32Set.In start all_start_instrs.
+  Proof. Admitted.
+(* TODO PROOF...
   Proof. intros. destruct tokens as [| t tokens']. 
     Case "tokens=nil". simpl in H0. contradict H0. omega.
     Case "tokens<>nil".
@@ -1377,12 +1377,13 @@ Section VERIFIER_CORR.
           unfold Int32Set.Subset in *.
           apply H2. apply Int32SetFacts.add_1. apply int_eq_refl.
   Qed.
+*)
 
-  Lemma process_buffer_start_in : forall code startAddrs jmpTargets,
-      process_buffer code =  Some (startAddrs, jmpTargets)
+  Lemma process_buffer_start_in : forall code start_instrs check_list iat_check_list call_check_list,
+      process_buffer code =  Some (start_instrs, check_list, iat_check_list, call_check_list)
         -> (length (code) > 0)%nat
-        -> Int32Set.In int32_zero startAddrs.
-  Proof. unfold process_buffer, FastVerifier.process_buffer; intros.
+        -> Int32Set.In int32_zero start_instrs.
+  Proof. unfold process_buffer, ReinsVerifier.process_buffer; intros.
     eapply process_buffer_aux_start_in. eassumption.
       rewrite list_length_map. assumption.
   Qed.
@@ -1408,7 +1409,7 @@ Section VERIFIER_CORR.
     end.
 
   Lemma extract_disp_include : forall start len tokens disp S,
-    extract_disp (List.map token2byte (firstn len tokens)) = Some disp
+    extract_disp_and_type (List.map token2byte (firstn len tokens)) = Some disp
       -> Int32Set.In (start +32_n len +32 disp) S
       -> includeAllJmpTargets start len tokens S.
   Proof. unfold extract_disp, includeAllJmpTargets; intros.
