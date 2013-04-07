@@ -1310,7 +1310,7 @@ Section VERIFIER_CORR.
            Int32Set.Subset iat_check_list all_iat_check_list /\
            Int32Set.Subset call_check_list all_call_check_list.
   Proof. Admitted.
-(* TODO PROOF - Ya ya, I'll fix it...
+(*  TODO PROOF 
   Proof. induction n. intros.
     Case "n=0". intros. destruct tokens; pbprover.
     Case "S n". intros.
@@ -1408,11 +1408,11 @@ Section VERIFIER_CORR.
       | _ => True
     end.
 
-  Lemma extract_disp_include : forall start len tokens disp S,
-    extract_disp_and_type (List.map token2byte (firstn len tokens)) = Some disp
+  Lemma extract_disp_include : forall start len tokens disp jump_t S,
+    extract_disp_and_type (List.map token2byte (firstn len tokens)) = Some (disp, jump_t)
       -> Int32Set.In (start +32_n len +32 disp) S
       -> includeAllJmpTargets start len tokens S.
-  Proof. unfold extract_disp, includeAllJmpTargets; intros.
+  Proof. unfold extract_disp_and_type, includeAllJmpTargets; intros.
     destruct_head. destruct p as [[pre ins] _].
     destruct ins; try trivial.
       Case "JMP".
@@ -1434,24 +1434,27 @@ Section VERIFIER_CORR.
     Int32Set.In x s -> Int32Set.Subset s s' -> Int32Set.In x s'.
   Proof. unfold Int32Set.Subset. intros. auto. Qed.
 
+(*
   Lemma process_buffer_aux_inversion :
-   forall n start tokens currStartAddrs currJmpTargets allStartAddrs allJmpTargets,
-    process_buffer_aux start n tokens (currStartAddrs, currJmpTargets) =
-      Some(allStartAddrs, allJmpTargets)
+   forall n start tokens start_instrs check_list iat_check_list call_check_list 
+           all_start_instrs all_check_list all_iat_check_list all_call_check_list,
+    process_buffer_aux start n tokens (start_instrs, check_list, iat_check_list, call_check_list) =
+      Some(all_start_instrs all_check_list all_iat_check_list all_call_check_list)
       -> noOverflow (start :: int32_of_nat (length tokens - 1) :: nil)
       -> Z_of_nat (length tokens) <= w32modulus
-      -> forall pc:int32, Int32Set.In pc (Int32Set.diff allStartAddrs currStartAddrs)
+      -> forall pc:int32, Int32Set.In pc (Int32Set.diff all_start_instrs start_instrs)
            -> exists tokens', exists len, exists remaining,
                 tokens' = (List.skipn (Zabs_nat (unsigned pc - unsigned start)) 
                              tokens) /\
-                goodDefaultPC_aux (pc +32_n len) start allStartAddrs 
+                goodDefaultPC_aux (pc +32_n len) start all_start_instrs 
                   (length tokens) /\
                 (dfa_recognize 256 non_cflow_dfa tokens' = Some (len, remaining) \/
                  (dfa_recognize 256 dir_cflow_dfa tokens' = Some (len, remaining) /\
-                  includeAllJmpTargets pc len tokens' allJmpTargets) \/
-                 dfa_recognize 256 nacljmp_dfa tokens' = Some (len, remaining)).
-(*  Admitted. *)
-  Proof. induction n. intros.
+                  includeAllJmpTargets pc len tokens' all_check_list) \/
+                 dfa_recognize 256 reinsjmp_nonIAT_dfa tokens' = Some (len, remaining)).
+    Proof. Admitted. *)
+(*  TODO PROOF - Ya... *)
+(*  Proof. induction n. intros.
     Case "n=0". intros. destruct tokens; pbprover.
     Case "S n". intros.
       process_buffer_aux_tac.
@@ -1583,9 +1586,10 @@ Section VERIFIER_CORR.
             exists len, remaining.
               split. trivial. split; assumption.
   Qed.
+*)
 
   Hint Rewrite Zminus_0_r : pbDB.
-
+(*
   Lemma process_buffer_inversion :
    forall buffer startAddrs jmpTargets,
     process_buffer buffer = Some(startAddrs, jmpTargets)
@@ -1599,6 +1603,9 @@ Section VERIFIER_CORR.
                  (dfa_recognize 256 dir_cflow_dfa tokens' = Some (len, remaining) /\
                   includeAllJmpTargets pc len tokens' jmpTargets) \/
                  dfa_recognize 256 nacljmp_dfa tokens' = Some (len, remaining)).
+  Proof. Admitted.
+*)
+(* TODO PROOF - OMG...
   Proof. unfold process_buffer; intros.
     assert (length (List.map byte2token buffer) = length buffer) as H10
       by (apply list_length_map).
@@ -1620,7 +1627,7 @@ Section VERIFIER_CORR.
           rewrite <- H10. assumption.
     exists tokens', len, remaining. int32_simplify. pbprover.
   Qed.
-
+*)
   (** ** Properties of simple_parse *)
   Lemma simple_parse'_len_pos : forall bytes ps pre ins bytes1,
     simple_parse' ps bytes = Some ((pre,ins), bytes1)
