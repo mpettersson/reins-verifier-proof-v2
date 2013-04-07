@@ -5,6 +5,9 @@
 *.swo
 *.cmo
 *.cmi
+*.cmx
+reinsverif.o
 Makefile.coq
 check
 check.o
+check.exe
