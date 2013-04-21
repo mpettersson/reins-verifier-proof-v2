@@ -853,9 +853,9 @@ Section VERIFIER_CORR.
       -> Ensembles.Included _ (addrRegion start1 limit1)
            (addrRegion start2 limit2).
   Proof.
-  Admitted.
+  (* Admitted. *)
 
- (*unfold subsetRegion, Ensembles.Included. intros.
+   unfold subsetRegion, Ensembles.Included. intros.
    unfold Ensembles.In, addrRegion in *.
    bool_elim_tac.
    destruct H2 as [i [H6 H8]].
@@ -864,7 +864,7 @@ Section VERIFIER_CORR.
      rewrite <- add_sub_assoc. rewrite sub_add_l.
      rewrite sub_idem. rewrite zero_add. assumption.
    int32_simplify; omega.
-  Qed.*)
+  Qed.
 
   (** ** Properties of checkSegments *)
   (* If two segments are identical, then if one passes checkSegments *)
