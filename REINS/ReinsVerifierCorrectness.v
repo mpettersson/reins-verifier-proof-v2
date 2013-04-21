@@ -1145,9 +1145,7 @@ Section VERIFIER_CORR.
   Lemma process_buffer_aux_nil: forall start n start_instrs check_list iat_check_list call_check_list,
     process_buffer_aux start n nil (start_instrs, check_list, iat_check_list, call_check_list) = 
     Some (start_instrs, check_list, iat_check_list, call_check_list).
-  Proof. Admitted.
-(*  TODO PROOF - Will come back and fix.
-  Proof. destruct n; auto. Qed. *)
+  Proof. destruct n; auto. Qed.
   
   
   Hint Rewrite process_buffer_aux_nil : pbDB. 

@@ -216,7 +216,11 @@ Section BUILT_DFAS.
   Fixpoint process_buffer_aux (loc: int32) (n: nat) (tokens:list (list token_id))
     (curr_res: Int32Set.t * Int32Set.t * Int32Set.t * Int32Set.t) :=
     match n with
-    | O => None 
+    | O => (* None *)
+      match tokens with
+      | nil => Some curr_res
+      | _ => None
+      end
     | S m =>
       match curr_res with
       | (start_instrs, check_list, iat_check_list, call_check_list) =>
