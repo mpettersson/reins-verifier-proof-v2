@@ -6,6 +6,7 @@
 *.cmo
 *.cmi
 *.cmx
+*.bak
 reinsverif.o
 Makefile.coq
 check

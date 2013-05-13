@@ -25,9 +25,9 @@ Definition block_size : Z := Z_of_nat 3072.
 
 Definition Z_to_nat (z : Z) : nat :=
     match z with
-    | Z0 => 0
-    | Zpos p => nat_of_P p
-    | Zneg p => 0
+        | Z0 => 0
+        | Zpos p => nat_of_P p
+        | Zneg p => 0
     end.
 
 Definition word_to_nat (w : WORD) : nat :=
@@ -38,7 +38,7 @@ Definition dword_to_nat (w : DWORD) : nat :=
 
 Definition ptr_to_nat {A} (p : Ptr A) : nat :=
     match p with
-    | ptr d _ => dword_to_nat d
+        | ptr d _ => dword_to_nat d
     end.
 
 Definition word_to_Z (w : WORD) : Z :=
@@ -49,7 +49,7 @@ Definition dword_to_Z (w : DWORD) : Z :=
 
 Definition ptr_to_Z {A} (p : Ptr A) : Z :=
     match p with
-    | ptr d _ => dword_to_Z d
+        | ptr d _ => dword_to_Z d
     end.
 
 Definition getChunk (data : list (list int8)) (z : Z) : list int8 :=
@@ -127,39 +127,39 @@ Fixpoint parseVector {A : Type} (parse : list (list BYTE) -> Z -> A)
                                 (count : nat)
                                  : vector count A :=
     match count with
-    | 0 => []
-    | S count' => (parse data n) :: (parseVector parse data size (n + size) count')
+        | 0 => []
+        | S count' => (parse data n) :: (parseVector parse data size (n + size) count')
     end.
 
 Fixpoint copySection (data : list (list BYTE)) (start : Z) (size : Z) (n : nat) : list (list BYTE) :=
-   match n with
-   | O => cons (vtolist (parseVector parseByte data 1 start (Z_to_nat size))) nil
-   | S n' => cons (vtolist (parseVector parseByte data 1 start (Z_to_nat block_size)))
+    match n with
+        | O => cons (vtolist (parseVector parseByte data 1 start (Z_to_nat size))) nil
+        | S n' => cons (vtolist (parseVector parseByte data 1 start (Z_to_nat block_size)))
              (copySection data (start+block_size) (size - block_size) n')
-end.
+    end.
 
 Definition parseImageDosHeader (data : list (list BYTE)) : _IMAGE_DOS_HEADER :=
  mkImageDosHeader 
-   (parseWord data 0)   (* e_magic *)
-   (parseWord data 2)   (* e_cblp *)
-   (parseWord data 4)   (* e_cp *)
-   (parseWord data 6)   (* e_crlc *)
-   (parseWord data 8)   (* e_cparhdr *)
-   (parseWord data 10)  (* e_minalloc *)
-   (parseWord data 12)  (* e_maxalloc *)
-   (parseWord data 14)  (* e_ss *)
-   (parseWord data 16)  (* e_sp *)
-   (parseWord data 18)  (* e_csum *)
-   (parseWord data 20)  (* e_ip *)
-   (parseWord data 22)  (* e_cs *)
-   (parseWord data 24)  (* e_lfarlc *)
-   (parseWord data 26)  (* e_ovno *)
+   (parseWord data 0)       (* e_magic *)
+   (parseWord data 2)       (* e_cblp *)
+   (parseWord data 4)       (* e_cp *)
+   (parseWord data 6)       (* e_crlc *)
+   (parseWord data 8)       (* e_cparhdr *)
+   (parseWord data 10)      (* e_minalloc *)
+   (parseWord data 12)      (* e_maxalloc *)
+   (parseWord data 14)      (* e_ss *)
+   (parseWord data 16)      (* e_sp *)
+   (parseWord data 18)      (* e_csum *)
+   (parseWord data 20)      (* e_ip *)
+   (parseWord data 22)      (* e_cs *)
+   (parseWord data 24)      (* e_lfarlc *)
+   (parseWord data 26)      (* e_ovno *)
    ((parseWord data 28)::
    (parseWord data 30)::
    (parseWord data 32)::
    (parseWord data 34)::[]) (* e_res *)
-   (parseWord data 36)  (* e_oemid *)
-   (parseWord data 38)  (* e_oeminfo *)
+   (parseWord data 36)      (* e_oemid *)
+   (parseWord data 38)      (* e_oeminfo *)
    ((parseWord data 40)::
    (parseWord data 42)::
    (parseWord data 44)::
@@ -170,65 +170,65 @@ Definition parseImageDosHeader (data : list (list BYTE)) : _IMAGE_DOS_HEADER :=
    (parseWord data 54)::
    (parseWord data 56)::
    (parseWord data 58)::[]) (* e_res2 *)
-   (parsePtr data 60) (* e_lfanew *)
+   (parsePtr data 60)       (* e_lfanew *)
 .
 
 Definition parseImageFileHeader (data : list (list BYTE)) (n : Z) : _IMAGE_FILE_HEADER :=
     mkImageFileHeader
-      (parseWord data n) 		(* Machine *)
+      (parseWord data n) 		    (* Machine *)
       (parseWord data (n+2)) 		(* NumberOfSections *)
       (parseDoubleWord data (n+4)) 	(* TimeDateStamp_IFH *)
       (parseDoubleWord data (n+8)) 	(* PointerToSymbolTable *)
-      (parseDoubleWord data (n+12)) 	(* NumberOfSymbols *)
+      (parseDoubleWord data (n+12)) (* NumberOfSymbols *)
       (parseWord data (n+16)) 		(* SizeOfOptionalHeader *)
       (parseWord data (n+18)) 		(* Characteristics_IFH *)
 .
 
 Definition parseImageDataDirectory (data : list (list BYTE)) (n : Z) : _IMAGE_DATA_DIRECTORY :=
     mkImageDataDirectory
-      (parseDoubleWord data n)		(* VirtualAddress_IDD *)
-      (parseDoubleWord data (n + 4)) 	(* Size *)
+      (parseDoubleWord data n)		    (* VirtualAddress_IDD *)
+      (parseDoubleWord data (n + 4))    (* Size *)
 .
 
 Definition parseImageOptionalHeader (data : list (list BYTE)) (n : Z) : _IMAGE_OPTIONAL_HEADER :=
     mkImageOptionalHeader
-      (parseWord data n)			(*Magic *)
+      (parseWord data n)			    (*Magic *)
       (parseByte data (n + 2))			(*MajorLinkerVersion *)
       (parseByte data (n + 3))			(*MinorLinkerVersion *)
-      (parseDoubleWord data (n + 4))		(*SizeOfCode *)
-      (parseDoubleWord data (n + 8))		(*SizeOfInitializedData *)
-      (parseDoubleWord data (n + 12))		(*SizeOfUninitializedData *)
-      (parseDoubleWord data (n + 16))		(*AddressOfEntryPoint *)
-      (parseDoubleWord data (n + 20))		(*BaseOfCode *)
-      (parseDoubleWord data (n + 24))		(*BaseOfData *)
-      (parseDoubleWord data (n + 28))		(*ImageBase *)
-      (parseDoubleWord data (n + 32))		(*SectionAlignment *)
-      (parseDoubleWord data (n + 36))		(*FileAlignment *)
-      (parseWord data (n + 40))			(*MajorOperatingSystemVersion *)
+      (parseDoubleWord data (n + 4))	(*SizeOfCode *)
+      (parseDoubleWord data (n + 8))	(*SizeOfInitializedData *)
+      (parseDoubleWord data (n + 12))	(*SizeOfUninitializedData *)
+      (parseDoubleWord data (n + 16))	(*AddressOfEntryPoint *)
+      (parseDoubleWord data (n + 20))	(*BaseOfCode *)
+      (parseDoubleWord data (n + 24))	(*BaseOfData *)
+      (parseDoubleWord data (n + 28))	(*ImageBase *)
+      (parseDoubleWord data (n + 32))	(*SectionAlignment *)
+      (parseDoubleWord data (n + 36))	(*FileAlignment *)
+      (parseWord data (n + 40))		    (*MajorOperatingSystemVersion *)
       (parseWord data (n + 42))			(*MinorOperatingSystemVersion *)
       (parseWord data (n + 44))			(*MajorImageVersion *)
       (parseWord data (n + 46))			(*MinorImageVersion *)
       (parseWord data (n + 48))			(*MajorSubsystemVersion *)
       (parseWord data (n + 50))			(*MinorSubsystemVersion *)
-      (parseDoubleWord data (n + 52))		(*Win32VersionValue *)
-      (parseDoubleWord data (n + 56))		(*SizeOfImage *)
-      (parseDoubleWord data (n + 60))		(*SizeOfHeaders *)
-      (parseDoubleWord data (n + 64))		(*CheckSum *)
+      (parseDoubleWord data (n + 52))	(*Win32VersionValue *)
+      (parseDoubleWord data (n + 56))	(*SizeOfImage *)
+      (parseDoubleWord data (n + 60))	(*SizeOfHeaders *)
+      (parseDoubleWord data (n + 64))	(*CheckSum *)
       (parseWord data (n + 68))			(*Subsystem *)
       (parseWord data (n + 70))			(*DllCharacteristics *)
-      (parseDoubleWord data (n + 72))		(*SizeOfStackReserve *)
-      (parseDoubleWord data (n + 76))		(*SizeOfStackCommit *)
-      (parseDoubleWord data (n + 80))		(*SizeOfHeapReserve *)
-      (parseDoubleWord data (n + 84))		(*SizeOfHeapCommit *)
-      (parseDoubleWord data (n + 88))		(*LoaderFlags *)
-      (parseDoubleWord data (n + 92))		(*NumberOfRvaAndSizes *)
+      (parseDoubleWord data (n + 72))	(*SizeOfStackReserve *)
+      (parseDoubleWord data (n + 76))	(*SizeOfStackCommit *)
+      (parseDoubleWord data (n + 80))	(*SizeOfHeapReserve *)
+      (parseDoubleWord data (n + 84))	(*SizeOfHeapCommit *)
+      (parseDoubleWord data (n + 88))	(*LoaderFlags *)
+      (parseDoubleWord data (n + 92))	(*NumberOfRvaAndSizes *)
       (parseVector parseImageDataDirectory data 8 (n + 96) 16)(*DataDirectory *)
 .
 
 Definition parseImageNtHeader (data : list (list BYTE)) (n : Z) : _IMAGE_NT_HEADER :=
     mkImageNtHeader
-      (parseDoubleWord data n) 			(*Signature  *)
-      (parseImageFileHeader data (n + 4)) 	(*FileHeader  *)
+      (parseDoubleWord data n) 			        (*Signature  *)
+      (parseImageFileHeader data (n + 4)) 	    (*FileHeader  *)
       (parseImageOptionalHeader data (n + 24)) 	(*OptionalHeader  *)
 .
 
@@ -237,14 +237,14 @@ Definition ISSN : Z := Z_of_nat IMAGE_SIZEOF_SHORT_NAME.
 Definition parseImageSectionHeader (data : list (list BYTE)) (n : Z) : _IMAGE_SECTION_HEADER :=
     mkImageSectionHeader
       (parseVector (parseByte) data 1 n IMAGE_SIZEOF_SHORT_NAME)(*Name_ISH *)
-      (parseDoubleWord data (n + ISSN))	(*PhysicalAddressORVirtualSize*)
-      (parseDoubleWord data (n + ISSN + 4))	(*VirtualAddress_ISH *)
-      (parseDoubleWord data (n + ISSN + 8))	(*SizeOfRawData *)
+      (parseDoubleWord data (n + ISSN))	        (*PhysicalAddressORVirtualSize*)
+      (parseDoubleWord data (n + ISSN + 4))	    (*VirtualAddress_ISH *)
+      (parseDoubleWord data (n + ISSN + 8))	    (*SizeOfRawData *)
       (parseDoubleWord data (n + ISSN + 12))	(*PointerToRawData *)
       (parseDoubleWord data (n + ISSN + 16))	(*PointerToRelocations *)
       (parseDoubleWord data (n + ISSN + 20))	(*PointerToLinenumbers *)
-      (parseWord data (n + ISSN + 24))	(*NumberOfRelocations *)
-      (parseWord data (n + ISSN + 26))	(*NumberOfLinenumbers *)
+      (parseWord data (n + ISSN + 24))	        (*NumberOfRelocations *)
+      (parseWord data (n + ISSN + 26))	        (*NumberOfLinenumbers *)
       (parseDoubleWord data (n + ISSN + 28))	(*Characteristics_ISH *)
 .
 
@@ -266,10 +266,10 @@ Definition parseImageExportDirectory (data : list (list BYTE)) (n : Z) : _IMAGE_
 
 Definition parseImageThunkData (data : list (list BYTE)) (n : Z) : _IMAGE_THUNK_DATA :=
     mkImageThunkData
-    	(parseByte data n)		(*ForwarderString *)
-	(parsePtr data (n+1)) 	(*Function *)
+    	(parseByte data n)		    (*ForwarderString *)
+	(parsePtr data (n+1)) 	        (*Function *)
 	(parseDoubleWord data (n+5))	(*Ordinal *)
-	(parsePtr data (n+9))	(*AddressOfData *)
+	(parsePtr data (n+9))	        (*AddressOfData *)
 .
 
 Fixpoint findSection (data : list (list BYTE)) (rva : DWORD) (n : Z) (num_sec : nat) : option _IMAGE_SECTION_HEADER :=
@@ -291,7 +291,7 @@ Definition vAddr_to_offset (vaddr : DWORD) (header : _IMAGE_SECTION_HEADER) : DW
 
 Definition derefImageNtHeader (data : list (list BYTE)) (p : Ptr _IMAGE_NT_HEADER) : _IMAGE_NT_HEADER :=
         match p with
-        | ptr d _ => parseImageNtHeader data (dword_to_Z d)
+            | ptr d _ => parseImageNtHeader data (dword_to_Z d)
         end.
 
 Definition getExports (data : list (list BYTE)) : list DWORD :=
@@ -325,7 +325,6 @@ Definition checkExports (data : list (list BYTE)) (mask : DWORD) : bool :=
     List.fold_left (andb) (List.map check exports) true
 .
 
-(*----------------------------------------------------------- *)
 
 Definition derefDataDirectoryIAT optionalHeader : _IMAGE_DATA_DIRECTORY :=
 	(nth IMAGE_DIRECTORY_ENTRY_IAT (vtolist (DataDirectory optionalHeader))
@@ -356,7 +355,7 @@ Definition derefImageImportDescriptor (data : list DWORD)
 *)
 
 Inductive IATBounds : Type :=
-| iatbounds : (DWORD * DWORD) -> IATBounds.
+    | iatbounds : (DWORD * DWORD) -> IATBounds.
 
 (* this returns the RVA start address and the size as two DWORD elements *)
 Definition getIATBounds (data : list (list BYTE)) : IATBounds :=

@@ -1,3 +1,19 @@
+(*  This file is (now) part of REINS 
+ *
+ *  This file is adapted to serve as a part of the native code 
+ *  REwriting and IN-lining System (REINS) Verifier, as presented in 
+ *  "Securing Untrusted Code via Compiler-Agnostic Binary Rewriting" 
+ *  by Richard Wartell, Viswath Mohan, Kevin W. Hamlen, and Zhiqiang Lin. 
+ *
+ *  Originally, this file was part of RockSalt (by Greg Morrisett, Gang
+ *  Tan, Joseph Tassarotti, Jean-Baptiste Tristan, and Deward Gan) and
+ *  the Compcert verified compiler (Xavier Leroy, INRIA Paris-Rocquencourt) 
+ *
+ *  The University of Texas at Dallas students who have worked on this 
+ *  project include Benjamin Ferrell, Gil Lundquist, Kenneth Miller, 
+ *  Matthew Pettersson, Justin Sahs, and Brett Webster.
+ *)
+
 (* *********************************************************************)
 (*                                                                     *)
 (*              The Compcert verified compiler                         *)
@@ -18,13 +34,41 @@
 (* JGM: modified once again to get rid of the module issue. *)
 (* JGM: modified to abstract over the wordsize. *)
 (* JDT: fixed the proofs so they work with abstract wordsize.
-        note that rol_rol and rolm_rolm did not generalize to
-        completely abstract wordsize. They still hold if wordsize
-        is a power of two or if the arguments they take are small enough
-        these weakened theorems are given as rol_rol_weak and 
-        rol_rol_weak_2 (and similarly for rolm_rolm).  *) 
-        
-
+ *      note that rol_rol and rolm_rolm did not generalize to
+ *      completely abstract wordsize. They still hold if wordsize
+ *      is a power of two or if the arguments they take are small enough
+ *      these weakened theorems are given as rol_rol_weak and 
+ *      rol_rol_weak_2 (and similarly for rolm_rolm).  
+ *) 
+ 
+(** 
+ * MCP: This file has been addapted, as specified below, to verify 
+ *      REINS rewritten binaries.  
+ *  
+ *	Changes		- "int" -> "wint"
+ *		
+ *	Additions 	- Lemma bits_of_Z_one
+ *				- Lemma low_bits_zero_even
+ *				- Definition high_bits_zero 
+ *				- Lemma and_high_bits_zero
+ *				- Lemma high_bits_zero_zero
+ *				- Lemma high_bits_zero_one
+ *				- Lemma high_bits_zero_width
+ *				- Lemma width_high_bits_zero
+ *				- Lemma higher_bits_zero
+ *				- Lemma two_power_nat_Zpower_2
+ *				- Lemma Psize_ge_1
+ *				- Lemma bits_of_Z_shift_1
+ *				- Lemma bits_of_Z_shift_0
+ *				- Lemma Psize_bits_of_Z_false
+ *				- Lemma Lt_2k_width
+ *				- Lemma lt_2k_high_bits_zero
+ *				- Lemma anti_extensionality
+ *				- Lemma bits_of_Z_ge_two_power_nat
+ *				- Lemma bits_of_Z_Zpos_exists_true
+ *				- Lemma Width_lt_2k
+ *				- Lemma high_bits_zero_lt_2k
+ *)
 
 Require Import Coqlib.
 
@@ -37,7 +81,7 @@ Module Word.
 Definition modulus : Z := two_power_nat wordsize.
 Definition half_modulus : Z := modulus / 2.
 
-(** * Comparisons *)
+(** Comparisons *)
 
 Inductive comparison : Type :=
   | Ceq : comparison               (**r same *)
@@ -67,11 +111,11 @@ Definition swap_comparison (c: comparison): comparison :=
   | Cge => Cle
   end.
 
-(** * Representation of machine integers *)
+(** Representation of machine integers *)
 
 (** A machine integer (type [wint]) is represented as a Coq arbitrary-precision
-  integer (type [Z]) plus a proof that it is in the range 0 (included) to
-  [modulus] (excluded. *)
+ *  integer (type [Z]) plus a proof that it is in the range 0 (included) to
+ *  [modulus] (excluded. *)
 
 Record wint: Type := mkint { intval: Z; intrange: 0 <= intval < modulus }.
 Implicit Arguments mkint [].
@@ -81,8 +125,8 @@ Definition max_signed : Z := half_modulus - 1.
 Definition min_signed : Z := - half_modulus.
 
 (** The [unsigned] and [signed] functions return the Coq integer corresponding
-  to the given machine integer, interpreted as unsigned or signed 
-  respectively. *)
+ *  to the given machine integer, interpreted as unsigned or signed 
+ *  respectively. *)
 
 Definition unsigned (n: wint) : Z := intval n.
 
@@ -99,7 +143,7 @@ Proof.
 Qed.
 
 (** Conversely, [repr] takes a Coq integer and returns the corresponding
-  machine integer.  The argument is treated modulo [modulus]. *)
+ *  machine integer.  The argument is treated modulo [modulus]. *)
 
 Definition repr (x: Z) : wint := 
   mkint (Zmod x modulus) (mod_in_range x).
@@ -123,7 +167,7 @@ Proof.
   right. red; intro. injection H. exact n.
 Qed.
 
-(** * Arithmetic and logical operations over machine integers *)
+(** Arithmetic and logical operations over machine integers *)
 
 Definition eq (x y: wint) : bool := 
   if zeq (unsigned x) (unsigned y) then true else false.
@@ -216,11 +260,11 @@ Definition is_zero (i: wint) : bool := eq i zero.
 Definition is_signed (i: wint) : bool := lt i zero.
 
 (** For bitwise operations, we need to convert between Coq integers [Z]
-  and their bit-level representations.  Bit-level representations are
-  represented as characteristic functions, that is, functions [f]
-  of type [nat -> bool] such that [f i] is the value of the [i]-th bit
-  of the number.  The values of characteristic functions for [i] greater
-  than 32 are ignored. *)
+ *  and their bit-level representations.  Bit-level representations are
+ *  represented as characteristic functions, that is, functions [f]
+ *  of type [nat -> bool] such that [f i] is the value of the [i]-th bit
+ *  of the number.  The values of characteristic functions for [i] greater
+ *  than 32 are ignored. *)
 
 Definition Z_shift_add (b: bool) (x: Z) :=
   if b then 2 * x + 1 else 2 * x.
@@ -284,9 +328,9 @@ Definition shru (x y: wint): wint :=
   repr (Z_of_bits wordsize (fun i => fx (i + vy))).
 
 (** Arithmetic right shift is defined as signed division by a power of two.
-  Two such shifts are defined: [shr] rounds towards minus infinity
-  (standard behaviour for arithmetic right shift) and
-  [shrx] rounds towards zero. *)
+ *  Two such shifts are defined: [shr] rounds towards minus infinity
+ *  (standard behaviour for arithmetic right shift) and
+ *  [shrx] rounds towards zero. *)
 
 Definition shr (x y: wint): wint :=
   repr (signed x / two_p (unsigned y)).
@@ -333,11 +377,11 @@ Definition is_power2 (x: wint) : option wint :=
   end.
 
 (** Recognition of integers that are acceptable as immediate operands
-  to the [rlwim] PowerPC instruction.  These integers are of the form
-  [000011110000] or [111100001111], that is, a run of one bits
-  surrounded by zero bits, or conversely.  We recognize these integers by
-  running the following automaton on the bits.  The accepting states are
-  2, 3, 4, 5, and 6.
+ *  to the [rlwim] PowerPC instruction.  These integers are of the form
+ *  [000011110000] or [111100001111], that is, a run of one bits
+ *  surrounded by zero bits, or conversely.  We recognize these integers by
+ *  running the following automaton on the bits.  The accepting states are
+ *  2, 3, 4, 5, and 6.
 <<
                0          1          0
               / \        / \        / \
@@ -432,9 +476,9 @@ Definition is_false (x: wint) : Prop := x = zero.
 Definition is_true  (x: wint) : Prop := x <> zero.
 Definition notbool  (x: wint) : wint  := if eq x zero then one else zero.
 
-(** * Properties of integers and integer arithmetic *)
+(** Properties of integers and integer arithmetic *)
 
-(** ** Properties of equality *)
+(** Properties of equality *)
 
 Lemma one_is_1: (1 mod modulus = 1).
     unfold Zmod in |- *.  unfold modulus. unfold wordsize. 
@@ -541,7 +585,7 @@ Proof. intros; split.
   intro H. apply int_eq_false_iff2. congruence.
 Qed.
 
-(** ** Properties of ordering *)
+(** Properties of ordering *)
 Lemma int_lt_inv : 
   forall i1 i2, lt i1 i2 = true -> signed i1 < signed i2.
 Proof. unfold lt; intros.
@@ -632,10 +676,10 @@ Proof. intros. apply int_lequ_true_iff.
   generalize (unsigned_range x). omega. 
 Qed.
 
-(** ** Modulo arithmetic *)
+(** Modulo arithmetic *)
 
 (** We define and state properties of equality and arithmetic modulo a
-  positive integer. *)
+ *  positive integer. *)
 
 Section EQ_MODULO.
 
@@ -719,7 +763,7 @@ Qed.
 End EQ_MODULO.
 
 (** We then specialize these definitions to equality modulo 
-  $2^32$ #2<sup>32</sup>#. *)
+ *  $2^32$ #2<sup>32</sup>#. *)
 
 (** Or rather, $2^wordsize$ #2<sup>wordsize</sup>#. *)
 
@@ -784,7 +828,7 @@ Lemma eqm_mult:
 Proof (@eqmod_mult modulus).
 Hint Resolve eqm_mult: ints.
 
-(** ** Properties of the coercions between [Z] and [wint] *)
+(** Properties of the coercions between [Z] and [wint] *)
 
 Lemma eqm_unsigned_repr:
   forall z, eqm z (unsigned (repr z)).
@@ -940,7 +984,7 @@ Proof.
   apply eqm_samerepr. unfold z'; red. exists 1. omega.
 Qed.
 
-(** ** Properties of addition *)
+(** Properties of addition *)
 
 Theorem add_unsigned: forall x y, add x y = repr (unsigned x + unsigned y).
 Proof. intros; reflexivity.
@@ -995,7 +1039,7 @@ Proof. intros z1 z2; rewrite add_unsigned. simpl.
   apply eq_sym. apply Zplus_mod.
 Qed.
 
-(** ** Properties of negation *)
+(** Properties of negation *)
 
 Theorem neg_repr: forall z, neg (repr z) = repr (-z).
 Proof.
@@ -1025,7 +1069,7 @@ Proof.
   auto with ints. omega.
 Qed.
 
-(** ** Properties of subtraction *)
+(** Properties of subtraction *)
 
 Theorem sub_zero_l: forall x, sub x zero = x.
 Proof.
@@ -1091,7 +1135,7 @@ Proof. intros; rewrite sub_add_opp; rewrite sub_add_opp.
   rewrite add_assoc. trivial.
 Qed.
 
-(** ** Properties of multiplication *)
+(** Properties of multiplication *)
 
 Theorem mul_commut: forall x y, mul x y = mul y x.
 Proof.
@@ -1169,7 +1213,7 @@ Proof.
   apply neg_mul_distr_l. 
 Qed.
 
-(** ** Properties of binary decompositions *)
+(** Properties of binary decompositions *)
 
 Lemma Z_bin_decomp_when_zero : forall z b, 
   Z_bin_decomp z = (false,b) -> z = 2*b.
@@ -1412,7 +1456,7 @@ Proof.
   intros; apply H0. omega.
 Qed.
 
-(** ** Properties of bitwise and, or, xor *)
+(** Properties of bitwise and, or, xor *)
 
 Lemma bitwise_binop_commut:
   forall f,
@@ -1628,14 +1672,14 @@ Proof.
   rewrite H. rewrite xor_zero. auto.
 Qed.
 
-(** ** Proofs by reflexion *)
+(** Proofs by reflexion *)
 
 (** To prove equalities involving shifts and rotates, we need to
-  show complicated integer equalities involving one integer variable
-  that ranges between 0 and 31.  Rather than proving these equalities,
-  we ask Coq to check them by computing the 32 values of the 
-  left and right-hand sides and checking that they are equal.
-  This is an instance of proving by reflection. *)
+ *  show complicated integer equalities involving one integer variable
+ *  that ranges between 0 and 31.  Rather than proving these equalities,
+ *  we ask Coq to check them by computing the 32 values of the 
+ *  left and right-hand sides and checking that they are equal.
+ *  This is an instance of proving by reflection. *)
 
 Section REFLECTION.
 
@@ -1681,7 +1725,7 @@ Qed.
 
 End REFLECTION.
 
-(** ** Properties of shifts and rotates *)
+(** Properties of shifts and rotates *)
 
 Lemma Z_of_bits_shift:
   forall n f,
@@ -1967,10 +2011,10 @@ Proof.
 Qed.
 
 
-(* The following is basically the same as Zdiv_interval_2 as found in Coqlib.v
-   but the version in that file has the condition hi > 0, which seems needlessly strong
-   There seems to be a different version of Coqlib.v that has hi >= 0, as we do here,
-   but I didn't want to just change it and potentially break some other dependency. -JDT *)
+(*  The following is basically the same as Zdiv_interval_2 as found in Coqlib.v
+ *  but the version in that file has the condition hi > 0, which seems needlessly strong
+ *  There seems to be a different version of Coqlib.v that has hi >= 0, as we do here,
+ *  but I didn't want to just change it and potentially break some other dependency. -JDT *)
 
 Lemma Zdiv_interval_3:
   forall lo hi a b,
@@ -2099,8 +2143,8 @@ Proof.
     apply two_power_nat_increases. unfold modulus in H0. omegaContradiction.
 Qed.
 
-(* This is not true for arbitrary wordsize. It works if
-   wordsize is a power of two or n + m < max_unsigned. See below. -JDT *)
+(*  This is not true for arbitrary wordsize. It works if
+ *  wordsize is a power of two or n + m < max_unsigned. See below. -JDT *)
 (*
 Theorem rol_rol:
   forall x n m,
@@ -3185,7 +3229,7 @@ Proof.
   unfold ltu. apply zlt_true. rewrite unsigned_repr_wordsize. apply H1.
 Qed.
 
-(** ** Properties of integer zero extension and sign extension. *)
+(** Properties of integer zero extension and sign extension. *)
 
 Section EXTENSIONS.
 
@@ -3446,7 +3490,7 @@ Qed.
 
 End EXTENSIONS.
 
-(** ** Properties of [one_bits] (decomposition in sum of powers of two) *)
+(** Properties of [one_bits] (decomposition in sum of powers of two) *)
 
 Opaque Z_one_bits. (* Otherwise, next Qed blows up! *)
 
@@ -3493,7 +3537,7 @@ Proof.
   intros; apply H; auto with coqlib.
 Qed.
 
-(** ** Properties of comparisons *)
+(** Properties of comparisons *)
 
 Theorem negate_cmp:
   forall c x y, cmp (negate_comparison c) x y = negb (cmp c x y).
@@ -3616,7 +3660,7 @@ Proof.
   omega. omega.
 Qed.
 
-(** * Def and properties of low_bits_zero *)
+(** Def and properties of low_bits_zero *)
 Definition low_bits_zero (x z:Z) := 
   forall i:Z, 0 <= i < z -> bits_of_Z wordsize x i = false.
 
@@ -4427,7 +4471,7 @@ Definition int32 := Word.wint 31.
 Definition int64 := Word.wint 63.
 
 
-(** * Tactics for wint *)
+(** Tactics for wint *)
 
 (** Convert operations on int32 to operations on Z *)
 Hint Rewrite Word.int_eq_true_iff Word.int_eq_false_iff Word.int_eq_unsigned 
@@ -4436,13 +4480,13 @@ Hint Rewrite Word.int_eq_true_iff Word.int_eq_false_iff Word.int_eq_unsigned
 Ltac int_to_Z_tac :=  autorewrite with int_to_Z in *.
 
 
-(** * Showing int32 is an ordered type *)
+(** Showing int32 is an ordered type *)
 
 Require Import Coq.Structures.OrderedType.
 
-(* Parameterize the following module by a size module would be ok for
-   defining an OrderedType, but somehow omega won't fail for some simple
-   situtions *)
+(** Parameterize the following module by a size module would be ok for
+ *  defining an OrderedType, but somehow omega won't fail for some simple
+ *  situtions *)
 Module Int32_OT <: OrderedType.
 
   Definition t := Word.wint 31.

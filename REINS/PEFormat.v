@@ -6,48 +6,14 @@
  *  This file is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU General Public License as
  *  published by the Free Software Foundation; either version 2 of
- *  the License, or (at your option) any later version.*)
-
-
-(* TODO:
- * 1) How to model a C union in Coq equivalently?
- * - IDEA: an inductive type
- * e.g.,
- *   union _x {
- *     WORD field_one;
- *     WORD field_two;
- *   };
- * becomes
- *   Inductive _x : Type :=
- *   | field_one : WORD -> _x
- *   | field_two : WORD -> _x.
- * --doesn't handle the fact that you can initialize as one type, then
- * --dereference as another...
- * - IDEA: simple tuple of all possible types
- *
- * 2) name conflicts: some field names are repeated, but they are global names in
- *    Coq, e.g. _IMAGE_FILE_HEADER and _IMAGE_IMPORT_DESCRIPTOR both have a member
- *    named TimeDateStamp, but there can be only one TimeDateStamp (this is because
- *    Coq creates a function TimeDateStamp : _IMAGE_DOS_HEADER -> DWORD). We need
- *    to come up with a naming convention, or to use some kind of namespace stuff.
- *    This is the only thing currently keeping this file from compiling.
+ *  the License, or (at your option) any later version.
  *)
  
-(* For now, as far as the name conflict goes, we don't have to replicate the C version of headers
-perfectly-that is for our information as we work with the program. Lets just make the _IMAGE_FILE_HEADER's 
-TimeDateStamp member be TimeDateStamp_IFH-this identifies it just fine and still keeps it separate from the 
-IMAGE_IMPORT_DESCRIPTOR's, which we can call TimeDateStamp_IID
-    -Adam*)
-(* Also, when it comes to unions, I think it best if we just keep track of all unions within the series
-of structs, and have a function interpret the data that's in it, and have the type actually be another list of bytes,
-this way, when anything is assigned to it, the functions always return updated results accordingly.
-    -Adam *)
-
 Require Import Bits.
 
 Inductive vector : nat -> Type -> Type :=
-| vnil : forall (A : Type), vector 0 A
-| vcons : forall (A : Type) (n : nat), A -> vector n A -> vector (S n) A.
+    | vnil : forall (A : Type), vector 0 A
+    | vcons : forall (A : Type) (n : nat), A -> vector n A -> vector (S n) A.
 
 Notation "[]" := (vnil _) : vector_scope.
 Notation "h :: t" := (vcons _ _ h t) (at level 60, right associativity) : vector_scope.
@@ -66,12 +32,12 @@ Definition WORD := int16.
 Definition DWORD := int32.
 
 Inductive Ptr : Type -> Type :=
-| ptr : DWORD -> forall (A : Type), Ptr A.
+    | ptr : DWORD -> forall (A : Type), Ptr A.
 
 
 Record _IMAGE_DATA_DIRECTORY : Type := mkImageDataDirectory {
- VirtualAddress_IDD : DWORD;
- Size : DWORD
+    VirtualAddress_IDD : DWORD;
+    Size : DWORD
 }.
 
 Record _IMAGE_OPTIONAL_HEADER : Type := mkImageOptionalHeader {
@@ -168,8 +134,8 @@ Definition IMAGE_DIRECTORY_ENTRY_END :=15.
 Definition LPBYTE := BYTE.
 
 Record _IMAGE_IMPORT_BY_NAME : Type := mkImageImportByName {
- Hint : WORD;
- Name_IIBN : BYTE[16]
+    Hint : WORD;
+    Name_IIBN : BYTE[16]
 }.
 
 

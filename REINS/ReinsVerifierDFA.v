@@ -1,27 +1,66 @@
+(*  This file is (now) part of REINS 
+ *
+ *  This file is adapted to serve as a part of the native code 
+ *  REwriting and IN-lining System (REINS) Verifier, as presented in 
+ *  "Securing Untrusted Code via Compiler-Agnostic Binary Rewriting" 
+ *  by Richard Wartell, Viswath Mohan, Kevin W. Hamlen, and Zhiqiang Lin. 
+ *
+ *  Originally, this file was part of RockSalt (by Greg Morrisett, Gang
+ *  Tan, Joseph Tassarotti, Jean-Baptiste Tristan, and Deward Gan) and
+ *  the Compcert verified compiler (Xavier Leroy, INRIA Paris-Rocquencourt) 
+ *
+ *  The University of Texas at Dallas students who have worked on this 
+ *  project include Benjamin Ferrell, Gil Lundquist, Kenneth Miller, 
+ *  Matthew Pettersson, Justin Sahs, and Brett Webster.
+ *)
+
 (* Copyright (c) 2011. Greg Morrisett, Gang Tan, Joseph Tassarotti, 
-   Jean-Baptiste Tristan, and Edward Gan.
+ *  Jean-Baptiste Tristan, and Edward Gan.
+ *
+ *  This file is part of RockSalt.
+ *
+ *  This file is free software; you can redistribute it and/or
+ *  modify it under the terms of the GNU General Public License as
+ *  published by the Free Software Foundation; either version 2 of
+ *  the License, or (at your option) any later version.
+ *)
 
-   This file is part of RockSalt.
-
-   This file is free software; you can redistribute it and/or
-   modify it under the terms of the GNU General Public License as
-   published by the Free Software Foundation; either version 2 of
-   the License, or (at your option) any later version.
-*)
-
-
-(** ReinsVerifierDFA.v:  
-    This file contains definitions of the parsers used to build the DFAs
-    used in RockSalts FastVerifier and REINS ReinsVerifier.v .
-    
-    Page 7 of RockSalt - "In practice, calculating a DFA in this fashion
-    is almost as good as the usual construction [26], but avoids the 
-    need to formalize and reason about graphs. The degree to which we 
-    simplify regular expressions as we calculate derivatives determines 
-    how few states are left in the resulting DFA. In our case, the number 
-    of states is small enough (61 for the largest DFA) that we do not 
-    need to worry about further minimization." 
-*)
+(** 
+ *  MCP: This file has been adopted, as specified below, to verify 
+ *       REINS rewritten binaries.
+ *
+ *	Changed - "int" to "wint"
+ *			- Definition logChunkSize
+ *			- Definition safeMask
+ *			- Definition reinsjmp_nonIAT_mask_instr
+ *
+ *	Added	- Definition lowMemZeroBits
+ *			- Definition lowMemCutoff
+ *			- Definition dir_cflow_parser
+ *			- Definition int32_p
+ *			- Definition reinsjmp_nonIAT_MASK_p
+ *			- Definition reinsjmp_nonIAT_MASK_EAX25_p
+ *			- Definition reinsjmp_IAT_or_RET_MASK_p
+ *			- Definition reinsjmp_nonIAT_JMP_p
+ *			- Definition reinsjmp_nonIAT_CALL_p
+ *			- Definition reinsjmp_IAT_JMP_p
+ *			- Definition reinsjmp_IAT_CALL_p
+ *			- Definition reinsjmp_nonIAT_p
+ *			- Definition reinsjmp_nonIAT_EAX25_p
+ *			- Definition reinsjmp_IAT_JMP_or_RET_p
+ *			- Definition reinsjmp_nonIAT_mask
+ *			- Definition reinsjmp_IAT_JMP_or_RET_mask
+ *			- Definition reinsjmp_IAT_or_RET_mask_instr
+ *
+ *   
+ *   Page 7 of RockSalt - "In practice, calculating a DFA in this fashion
+ *   is almost as good as the usual construction [26], but avoids the 
+ *   need to formalize and reason about graphs. The degree to which we 
+ *   simplify regular expressions as we calculate derivatives determines 
+ *   how few states are left in the resulting DFA. In our case, the number 
+ *   of states is small enough (61 for the largest DFA) that we do not 
+ *   need to worry about further minimization." 
+ *)
 
 
 Require Import Coqlib.
@@ -44,7 +83,7 @@ Import X86_PARSER.
 Import X86_BASE_PARSER.
 Require Import X86Syntax.
 
-(* In NaCl, ChunkSize is either 16 or 32
+(* In NativeClient, ChunkSize is either 16 or 32
  * In RockSalt, ChunkSize was 32
  * that is, longChunkSize was 5%nat *)
 Definition logChunkSize := 4%nat.
@@ -73,23 +112,23 @@ Implicit Arguments make_dfa [t].
 
 
 (** Subset of the parsers that don't do control-flow, but allow the
-    operand size override prefix -- this is actually the same as 
-    instr_parsers_opsize_pre. *)
+ *  operand size override prefix -- this is actually the same as 
+ *  instr_parsers_opsize_pre. *)
 Definition non_cflow_instrs_opsize_pre : list (parser instruction_t) := 
   instr_parsers_opsize_pre.
 
 (** Subset of the parsers that don't do control-flow, and do not allow the
-    operand size override prefix. *)
+ *  operand size override prefix. *)
 Definition non_cflow_instrs_nosize_pre : list (parser instruction_t) := 
   AAA_p :: AAD_p :: AAM_p :: AAS_p :: ADC_p false :: ADD_p false :: AND_p false :: 
   CMP_p false :: OR_p false :: SBB_p false :: SUB_p false :: XOR_p false :: 
   BSF_p :: BSR_p :: BSWAP_p :: BT_p :: BTC_p :: BTR_p :: BTS_p :: 
   CDQ_p :: CLC_p :: 
-  (* FIX:  why does NACL accept CLD? *)
+  (* FIX:  why does NativeClient accept CLD? *)
   CLD_p :: 
   CMOVcc_p :: CMC_p ::CMPXCHG_p :: 
   CWDE_p :: DAA_p :: DAS_p :: DEC_p :: DIV_p :: 
-  (* FIX:  why does NACL accept HLT? *)
+  (* FIX:  why does NativeClient accept HLT? *)
   HLT_p ::
   IDIV_p :: 
   IMUL_p false :: INC_p :: LAHF_p :: LEA_p :: LEAVE_p :: MOV_p false 
@@ -100,23 +139,23 @@ Definition non_cflow_instrs_nosize_pre : list (parser instruction_t) :=
   nil.
 
 (** Subset of the parsers that don't do control-flow and which allow
-   the rep prefix - some of these are allowed to have 16 bit mode
-   in NaCl, but to be safe we'll not add those in unless we get a
-   failing test case. *)
+ * the rep prefix - some of these are allowed to have 16 bit mode
+ * in NativeClient, but to be safe we'll not add those in unless we get a
+ * failing test case. *)
 Definition non_cflow_instrs_rep_pre : list (parser instruction_t) :=
   CMPS_p :: MOVS_p :: STOS_p :: nil.
 
 (** Prefixes allowed for non-control-flow operations that support an
-    operand size override.  We could possibly add in the lock and 
-    repeat prefixes, but I'm keeping things simple for now.  We cannot
-    allow the segment override prefix for NaCL. *)
+ *  operand size override.  We could possibly add in the lock and 
+ *  repeat prefixes, but I'm keeping things simple for now.  We cannot
+ *  allow the segment override prefix for NativeClient. *)
 Definition valid_prefix_parser_opsize := 
   op_override_p @ (fun p => mkPrefix None None p false %% prefix_t).
 
 (** Prefixes allowed for non-control-flow operations that do not support
-    an operand size override.  We could possibly add in the lock and
-    repeat prefixes, but I'm keeping things simple for now. We cannot
-    allows the segment override prefix for NaCL, except for GS *)
+ *  an operand size override.  We could possibly add in the lock and
+ *  repeat prefixes, but I'm keeping things simple for now. We cannot
+ *  allows the segment override prefix for NativeClient, except for GS *)
 Definition valid_prefix_parser_nooverride := 
   Eps_p @ (fun p => (mkPrefix None None false false) %% prefix_t) |+|
   ("0110" $$ bits "0101" @ (fun p => (mkPrefix None (Some GS) false false) %% prefix_t)).
@@ -128,7 +167,7 @@ Definition valid_prefix_parser_rep :=
 
 
 (** The list of valid prefix and instruction parsers for non-control-flow
-    operations. *)
+ *  operations. *)
 Definition non_cflow_parser_list := 
   (List.map (fun (p:parser instruction_t) => valid_prefix_parser_nooverride $ p) 
     non_cflow_instrs_nosize_pre) ++
@@ -140,7 +179,7 @@ Definition non_cflow_parser_list :=
 Definition non_cflow_parser := alts non_cflow_parser_list.
 
 (* Direct jumps. Destinations will be checked to see if 
-   they are known, valid starts of instructions. *)
+ * they are known, valid starts of instructions. *)
 
 (* We only want to allow "near" jumps to direct, relative offsets *)
 Definition dir_near_JMP_p : parser instruction_t := 
@@ -204,7 +243,7 @@ Definition int32_p (i : int32) : parser unit_t :=
       bitslist (b0 ++ b1 ++ b2 ++ b3).
 
 (* Jumps that don't target the IAT must be preceded by a masking instruction
-   a la nacl *)
+   a la native client *)
 Definition reinsjmp_nonIAT_MASK_p (r: register) : parser instruction_t :=
     (* The masking AND is encoded as follows:
      * "10000001" -- 0x81 = (opcode) AND r/m32 imm32 (32 from prefix)
@@ -321,11 +360,11 @@ Definition reinsjmp_IAT_JMP_or_RET_mask : parser (pair_t instruction_t instructi
     reinsjmp_IAT_JMP_or_RET_p.
 
 (** Next, we define a boolean-valued test that tells whether an instruction
-    is a valid non-control-flow instruction.  We should have the property
-    that the [non_cflow_parser] only builds instructions that satisfy this
-    predicate (as shown below.)  Furthermore, we should be able to argue
-    that for each of these instructions, the NaCL SFI invariants are preserved. 
-*)
+ *  is a valid non-control-flow instruction.  We should have the property
+ *  that the [non_cflow_parser] only builds instructions that satisfy this
+ *  predicate (as shown below.)  Furthermore, we should be able to argue
+ *  that for each of these instructions, the NativeClient SFI invariants are preserved. 
+ *)
 Definition no_imm_op(op1:operand) : bool := 
   match op1 with 
     | Imm_op _ => false

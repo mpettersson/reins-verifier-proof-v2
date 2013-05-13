@@ -1,18 +1,50 @@
+(*  This file is (now) part of REINS 
+ *
+ *  This file is adapted to serve as a part of the native code 
+ *  REwriting and IN-lining System (REINS) Verifier, as presented in 
+ *  "Securing Untrusted Code via Compiler-Agnostic Binary Rewriting" 
+ *  by Richard Wartell, Viswath Mohan, Kevin W. Hamlen, and Zhiqiang Lin. 
+ *
+ *  Originally, this file was part of RockSalt (by Greg Morrisett, Gang
+ *  Tan, Joseph Tassarotti, Jean-Baptiste Tristan, and Deward Gan) and
+ *  the Compcert verified compiler (Xavier Leroy, INRIA Paris-Rocquencourt) 
+ *
+ *  The University of Texas at Dallas students who have worked on this 
+ *  project include Benjamin Ferrell, Gil Lundquist, Kenneth Miller, 
+ *  Matthew Pettersson, Justin Sahs, and Brett Webster.
+ *)
+
 (* Copyright (c) 2011. Greg Morrisett, Gang Tan, Joseph Tassarotti, 
-   Jean-Baptiste Tristan, and Edward Gan.
+ * Jean-Baptiste Tristan, and Edward Gan.
+ *
+ * This file is part of RockSalt.
+ *
+ * This file is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation; either version 2 of
+ * the License, or (at your option) any later version.
+ *)
 
-   This file is part of RockSalt.
+(** Broke out the reasoning for the "masked jumps" used in the NativeClient verifier
+ *  so I don't have to wait for long compile times on DFACorrectness.v
+ *)
 
-   This file is free software; you can redistribute it and/or
-   modify it under the terms of the GNU General Public License as
-   published by the Free Software Foundation; either version 2 of
-   the License, or (at your option) any later version.
-*)
+(**
+ *	MCP: This file has been addapted, as specified below, to verify REINS
+ *	     rewritten binaries. 
+ *
+ *	NOT Changed	- Lemma byte_explode_bits b
+ *				- Lemma split_bytes_n (Proof Changed)
+ *				- Lemma byte2token_app xs n1 n2 (Proof Changed)
+ *				- Lemma nat2bools_byte2token_is_byte_explode xs (Proof Changed)
+ *				- Lemma reg_parser r s (Proof Changed)
+ *				- Lemma flat_map_nil_is_nil x (Proof Changed)
+ *				- Lemma in_parser_implies_simple_parse (Proof Changed)
+ *				- Lemma reinsjmp_nonIAT_dfa_corr (Lemma only renamed, Proof Changed)
+ *				- Lemma reinsjmp_IAT_JMP_or_RET_mask_dfa_length (Lemma only renamed, Proof Changed)
+ *	
+ *)
 
-
-(** Broke out the reasoning for the "masked jumps" used in the NaCL verifier
-    so I don't have to wait for long compile times on DFACorrectness.v
-*)
 Require Import Coqlib.
 Require Import Parser.
 Require Import Ascii.
@@ -31,7 +63,7 @@ Import X86_PARSER_ARG.
 Import X86_PARSER.
 Import X86_BASE_PARSER.
 Import X86Syntax.
-Require Import ReinsDFACorrectness.
+Require Import DFACorrectness.
 Hint Constructors in_parser.
 
 Import ABSTRACT_MAKE_DFA.

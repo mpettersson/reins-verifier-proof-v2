@@ -1,4 +1,4 @@
-MODULES := Int32 PEFormat PETraversal ReinsVerifier ReinsVerifierDFA CompiledDFAs REINSjmp X86Lemmas ReinsDFACorrectness 
+MODULES := Int32 PEFormat PETraversal ReinsVerifier ReinsVerifierDFA CompiledDFAs REINSjmp X86Lemmas DFACorrectness 
 # ReinsVerifierCorrectness
 VS 	:= $(MODULES:%=%.v)
 

@@ -1,42 +1,58 @@
-(* If the following hold,
-	All executable code resides in low memory
-	All exported symbols target low memory areas
-	No disassembled instructions spans a chunk boundary
-	static branches target low memory chunk boundaries
-	all computed jumps that do not reference the IAT are 
-		immediately preceded by and-masking 
-		instruction from Table 1 in the same chunk 
-	Computed jumps that read the IAT access a properly 
-		aligned IAT entry, and are preceded by an 
-		and-mask of the return address (call 
-		instructions must end on a chunk boundary 
-		rather than requiring a mask, since they push
-		their own return address 
-	There are no trap instructions; int or syscall 
-THEN:
-	These properties ensure that any unaligned instruction sequences
-concealed within untrusted, executable sections are not reachable
-at runtime.
-*)
-
-
-(* Actual algorithm that tests an imaginary binary - image this in 
-the light of FastVerifier *)
-
-
-(*------------------------ COPIED AND PASTED FROM FastVerifier ----------------- *)
+(*  This file is (now) part of REINS 
+ *
+ *  This file is adapted to serve as a part of the native code 
+ *  REwriting and IN-lining System (REINS) Verifier, as presented in 
+ *  "Securing Untrusted Code via Compiler-Agnostic Binary Rewriting" 
+ *  by Richard Wartell, Viswath Mohan, Kevin W. Hamlen, and Zhiqiang Lin. 
+ *
+ *  Originally, this file was part of RockSalt (by Greg Morrisett, Gang
+ *  Tan, Joseph Tassarotti, Jean-Baptiste Tristan, and Deward Gan) and
+ *  the Compcert verified compiler (Xavier Leroy, INRIA Paris-Rocquencourt) 
+ *
+ *  The University of Texas at Dallas students who have worked on this 
+ *  project include Benjamin Ferrell, Gil Lundquist, Kenneth Miller, 
+ *  Matthew Pettersson, Justin Sahs, and Brett Webster.
+ *)
 
 (* Copyright (c) 2011. Greg Morrisett, Gang Tan, Joseph Tassarotti, 
-   Jean-Baptiste Tristan, and Edward Gan.
+ * Jean-Baptiste Tristan, and Edward Gan.
+ *
+ * This file is part of RockSalt.
+ *
+ * This file is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation; either version 2 of
+ * the License, or (at your option) any later version.
+ *)
 
-   This file is part of RockSalt.
+(** A REINS rewritten binary is guarenteed 'safe' iff the following holds:
+ *      - All executable code resides in low memory
+ *	    - All exported symbols target low memory areas
+ *	    - No disassembled instructions spans a chunk boundary
+ *	    - Static branches target low memory chunk boundaries
+ *	    - All computed jumps that do not reference the IAT are immediately 
+ *	      preceded by and-masking instruction from Table 1 in the same chunk 
+ *	    - Computed jumps that read the IAT access a properly aligned IAT 
+ *	      entry, and are preceded by an and-mask of the return address (call 
+ *	      instructions must end on a chunk boundary rather than requiring 
+ *	      a mask, since they push their own return address 
+ *	    - There are no trap instructions; int or syscall 
+ *)
 
-   This file is free software; you can redistribute it and/or
-   modify it under the terms of the GNU General Public License as
-   published by the Free Software Foundation; either version 2 of
-   the License, or (at your option) any later version.
-*)
-
+ (**MCP: This file has been addapted, as specified below, to verify REINS
+ *      rewritten binaries.
+ *
+ *  NOT Changed	- Definition n_shift_add
+ *		        - Fixpoint n_of_bits
+ *		        - Definition byte2token
+ *		        - Definition token2byte
+ *		        - Variable non_cflow_dfa
+ *		        - Variable dir_cflow_dfa
+ *		        - Fixpoint parseloop
+ *		        - Definition aligned_bool
+ *		        - Definition aligned
+ *		        - Function checkAligned_aux
+ *)
 
 Require Import Coqlib.
 Require Import Parser.
@@ -77,8 +93,8 @@ Definition token2byte (t: token_id) : int8 := Word.repr (Z_of_nat t).
 Section BUILT_DFAS.
 
   (* In this section we will just assume the DFAs are all built;
-     that is, non_cflow_dfa should be the result of "make_dfa non_cflow_parser" and
-     similarly for dir_cflow_dfa and nacljmp_dfa *)
+   * that is, non_cflow_dfa should be the result of "make_dfa non_cflow_parser" and
+   * similarly for dir_cflow_dfa and reinsjmp_dfa *)
   Variable non_cflow_dfa : DFA.
   Variable dir_cflow_dfa : DFA.
   Variable reinsjmp_nonIAT_dfa : DFA.
@@ -89,10 +105,9 @@ Section BUILT_DFAS.
   Variable reinsjmp_IAT_CALL_p : parser instruction_t.
 
   (* G.T.: may be a good idea to parametrize the DFA w.r.t. the ChunkSize;
-     Google's verifier allows it either to be 16 or 32.
-   Parameters logChunkSize:nat.
-   Hypothesis logChunkSize_range : (0 < logChunkSize <= Word.wordsize 31)%nat.
-  *)
+   * Google's verifier allows it either to be 16 or 32.
+   * Parameters logChunkSize:nat.
+   * Hypothesis logChunkSize_range : (0 < logChunkSize <= Word.wordsize 31)%nat.*)
 
   Fixpoint parseloop (ps:X86_PARSER.instParserState) (bytes:list int8) : 
     option ((prefix * instr) * list int8) := 
@@ -118,9 +133,9 @@ Section BUILT_DFAS.
     end.
 
   (* parseloop, X86_PARSER.parse_byte, and X86_PARSER.instParserState all have a
-     too-restrictive type, expecting the underlying parser to parse a prefix and
-     an instruction. For our reinsjmp parsers, we are parsing pairs of instructions,
-     so we redefine these three functions with that in mind *)
+   * too-restrictive type, expecting the underlying parser to parse a prefix and
+   * an instruction. For our reinsjmp parsers, we are parsing pairs of instructions,
+   * so we redefine these three functions with that in mind *)
 
   Record instParserState' := mkPS' {
       inst_ctxt' : ctxt_t;
@@ -156,8 +171,8 @@ Section BUILT_DFAS.
     end.
 
   (* parseloop, X86_PARSER.parse_byte, and X86_PARSER.instParserState all have a
-     too-restrictive type, expecting the underlying parser to parse a prefix and
-     an instruction. For our IAT call extraction, we want a single instruction. *)
+   * too-restrictive type, expecting the underlying parser to parse a prefix and
+   * an instruction. For our IAT call extraction, we want a single instruction. *)
 
   Record instParserState'' := mkPS'' {
       inst_ctxt'' : ctxt_t;
@@ -205,14 +220,14 @@ Section BUILT_DFAS.
    * proof scripts such as rewrite or omega may fail since token_id needs to
    * be unfolded. *)
 
-  (* Note:  The format of sections were changed due to speed, memory, and crash 
-  *  concerns; what was a list of bytes is now a list of list of bytes.  Also note 
-  *  that each section contains bounds information that is checked against the low 
-  *  memory boundary. 
+ (* Note:  The format of sections were changed due to speed, memory, and crash 
+  * concerns; what was a list of bytes is now a list of list of bytes.  Also note 
+  * that each section contains bounds information that is checked against the low 
+  * memory boundary. 
   *  
-  *  Previously:
-  *  Fixpoint process_buffer_aux (loc: int32) (n: nat) (tokens:list token_id)
-  *    (curr_res: Int32Set.t * Int32Set.t) := etc..... *)
+  * Previously:
+  * Fixpoint process_buffer_aux (loc: int32) (n: nat) (tokens:list token_id)
+  *   (curr_res: Int32Set.t * Int32Set.t) := etc..... *)
   Fixpoint process_buffer_aux (loc: int32) (n: nat) (tokens:list (list token_id))
     (curr_res: Int32Set.t * Int32Set.t * Int32Set.t * Int32Set.t) :=
     match n with
@@ -369,13 +384,13 @@ Section BUILT_DFAS.
     Int32Set.for_all aligned_bool callAddrs.
 
   (* A section is in low memory if its end (start + length) is <= lowMemCutoff,
-     and the addition doesn't overflow *)
+   * and the addition doesn't overflow *)
   Definition checkExecSectionLowMemory (start : int32) (length : int32) : bool :=
     andb (int32_lequ_bool (start +32 length) (@repr 31 lowMemCutoff)) (checkNoOverflow start length).
 
 
-  (* Given an executable section, represented as a list of bytes,
-  *  check that the section obeys policy *)
+ (* Given an executable section, represented as a list of bytes,
+  * check that the section obeys policy *)
   Definition checkExecSection (iat : IATBounds) (section: int32 * int32 * list (list int8)) : (bool * Int32Set.t) :=
     match section with
     | (start,len,buffer) =>

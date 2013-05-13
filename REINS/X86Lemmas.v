@@ -47,7 +47,7 @@ Notation GLimit s := (seg_regs_limits (rtl_mach_state s) GS).
 Notation EStart s := (seg_regs_starts (rtl_mach_state s) ES).
 Notation ELimit s := (seg_regs_limits (rtl_mach_state s) ES).
 
-(** * Lemmas and tactics for eliminating and introducing a RTL monad *)
+(** Lemmas and tactics for eliminating and introducing a RTL monad *)
 
 Lemma rtl_bind_okay_elim:
   forall (A B:Type) (c1:RTL A) (f: A -> RTL B) (s1 s2:rtl_state) (v:B),
@@ -86,8 +86,8 @@ Proof. intros. unfold Bind, RTL_monad in H.
 Qed.
 
 (** Find a (v <- op1; op2) s = (Okay_ans v', s') in the context; break
- ** it using rtl_bind_okay_elim; introduce the intermediate state 
- ** and value into the context; try the input tactic *)
+ *  it using rtl_bind_okay_elim; introduce the intermediate state 
+ *  and value into the context; try the input tactic *)
 Ltac rtl_okay_break := 
   match goal with
     | [H: Bind _ _ _ ?s = (Okay_ans ?v', ?s') |- _]  => 
@@ -97,7 +97,7 @@ Ltac rtl_okay_break :=
   end.
 
 (** Find a (v <- op1; op2) s = Failed in the context; break
- ** it using rtl_bind_fail_elim to destruct the goal into two cases *)
+ *  it using rtl_bind_fail_elim to destruct the goal into two cases *)
 Ltac rtl_fail_break := 
   match goal with
     | [H: Bind _ _ _ ?s = (Fail_ans _, _) |- _]  => 
@@ -130,7 +130,7 @@ Ltac extended_destruct_head c :=
     | _ => fail
   end.
 
-(** * Lemmas and tactics for simplifying a RTL computation*)
+(** Lemmas and tactics for simplifying a RTL computation*)
 
 Lemma update_env1: forall s r1 r2 v env,
   r1 <> r2 -> (update_env r1 v env) s r2 = env s r2.
@@ -233,19 +233,19 @@ Hint Rewrite one_plus_rewrite_2 one_plus_rewrite_3
 
 Ltac simpl_rtl := autorewrite with rtl_rewrite_db in *.
 
-(** * Lemmas about basic operations that are used to define
-    * instruction semantics. Conventions used in lemmas are explained
-      below:
-      
-      (1) Lemmas ending with "_equation" are for instructions that
-      always suceed and return the identical state when given an
-      initial state; * in addtion, the values they return are
-      easy to write down.
-      
-      (2) Lemmas ending with "_exists" are for instructions that
-      always succeed and return the same state. But the return
-      values are not easy to write down; so we use an existential
-      in the lemmas.
+(**    Lemmas about basic operations that are used to define
+ *     instruction semantics. Conventions used in lemmas are explained
+ *     below:
+ *     
+ *     (1) Lemmas ending with "_equation" are for instructions that
+ *     always suceed and return the identical state when given an
+ *     initial state; * in addtion, the values they return are
+ *     easy to write down.
+ *     
+ *     (2) Lemmas ending with "_exists" are for instructions that
+ *     always succeed and return the same state. But the return
+ *     values are not easy to write down; so we use an existential
+ *     in the lemmas.
  *)
 
 Lemma in_seg_bounds_equation : forall seg a s,
@@ -349,7 +349,7 @@ Ltac rtl_okay_intro_L1 :=
 
 Ltac rtl_okay_intro := rtl_okay_intro_L1.
 
-(** * Lemmas and tactics for eliminating and introducing a conversion monad *)
+(** Lemmas and tactics for eliminating and introducing a conversion monad *)
 Lemma conv_bind_elim :
   forall (A B:Type) (cv1:Conv A) (f: A -> Conv B) (cs1 cs2:conv_state) (v:B),
     Bind _ cv1 f cs1 = (v, cs2)
@@ -368,7 +368,7 @@ Ltac conv_break :=
         destruct H as [cs1 [v1 [H1 H]]]
   end.
 
-(** * Lemmas about RTL_step_list *)
+(** Lemmas about RTL_step_list *)
 
 Lemma RTL_step_list_app : forall rl1 rl2, 
   RTL_step_list (rl1 ++ rl2)  = (RTL_step_list rl1;; RTL_step_list rl2).
@@ -393,17 +393,17 @@ Proof. trivial. Qed.
 Hint Rewrite RTL_step_list_app RTL_step_list_cons RTL_step_list_nil : step_list_db.
 
 
-(** * The following sets up the general framework for proving properties of
-   instruction semantics:
-   (1) Module type RTL_STATE_REL provides the abstraction of a relation between 
-       two RTL states, e.g., the two states have the same segment registers.
-   (2) Module type RTL_Prop provides the abstraction of a property about
-       RTL computations.
-   (3) Functor RTL_Prop takes a RTL_STATE_REL module and lifts the 
-       relation to a property about RTL compuation.
-   (4) Functor Conv_Prop takes a RTL_Prop module and lifts the 
-       property to a property about conversion.
-*)
+(** The following sets up the general framework for proving properties of
+ *  instruction semantics:
+ *  (1) Module type RTL_STATE_REL provides the abstraction of a relation between 
+ *      two RTL states, e.g., the two states have the same segment registers.
+ *  (2) Module type RTL_Prop provides the abstraction of a property about
+ *      RTL computations.
+ *  (3) Functor RTL_Prop takes a RTL_STATE_REL module and lifts the 
+ *      relation to a property about RTL compuation.
+ *  (4) Functor Conv_Prop takes a RTL_Prop module and lifts the 
+ *      property to a property about conversion.
+ *)
 
 Module Type RTL_STATE_REL.
   (* A binary relation that relates two RTL states *)
@@ -431,8 +431,8 @@ Module RTL_Prop (R:RTL_STATE_REL) <: RTL_PROP.
   Implicit Arguments rtl_prop [A].
 
   (* To prove "Bind _ c1 f" satisfies a RTL-computation property, it is
-     sufficient to show c1 satifies it, and f satifies it for any result
-     of c1 *)
+   * sufficient to show c1 satifies it, and f satifies it for any result
+   * of c1 *)
   Lemma bind_sat_prop : forall (A B:Type) (c1:RTL A) (f:A -> RTL B), 
     rtl_prop c1 -> (forall a:A, rtl_prop (f a))
       -> rtl_prop (Bind _ c1 f).
@@ -459,10 +459,10 @@ Module Conv_Prop (RP: RTL_PROP).
   Implicit Arguments rtl_prop [A].
 
   (* Lift a property about a RTL computation to a property about conversion from
-   an x86 instruction to a list of RTL instructions. It says that
-   if the computation for the input RTL-instruction list satifies the
-   property, and after conversion the output RTL-instruction list also
-   satisifies the property *)
+   * an x86 instruction to a list of RTL instructions. It says that
+   * if the computation for the input RTL-instruction list satifies the
+   * property, and after conversion the output RTL-instruction list also
+   * satisifies the property *)
   Definition conv_prop (A:Type) (cv:Conv A) := 
     forall cs (v:A) cs',
       cv cs = (v, cs')
@@ -520,7 +520,7 @@ Ltac conv_backward :=
          repeat rtl_okay_break
   end.
   
-(** * Lemmas about that instructions that preserve the state *)
+(** Lemmas about that instructions that preserve the state *)
 
 Module Same_RTL_State_Rel <: RTL_STATE_REL.
   Definition brel (s1 s2 : rtl_state) := s1 = s2.
@@ -552,8 +552,8 @@ Ltac same_rtl_state_tac :=
             | [|- same_rtl_state _] => auto with same_rtl_state_db
           end).
 
-(** * Lemmas about that instructions that preserve the machine state,
-   which is the set of registers in x86 *)
+(** Lemmas about that instructions that preserve the machine state,
+ *  which is the set of registers in x86 *)
 Module Same_Mach_State_Rel <: RTL_STATE_REL.
   Definition brel (s1 s2 : rtl_state) := 
     rtl_mach_state s1 = rtl_mach_state s2.
@@ -631,7 +631,7 @@ Hint Immediate set_ps_same_mach_state
   get_byte_same_mach_state choose_bits_same_mach_state
   : same_mach_state_db.
 
-(** * Lemmas about when a machine computation does not change seg registers *)
+(** Lemmas about when a machine computation does not change seg registers *)
 
 Module Same_Seg_Regs_Rel <: RTL_STATE_REL.
   Definition brel (s1 s2 : rtl_state) := 
@@ -705,7 +705,7 @@ Qed.
 
 Hint Resolve set_loc_same_seg_regs : same_seg_regs_db.
 
-(** * Lemmas about when a machine computation does not change the pc reg *)
+(** Lemmas about when a machine computation does not change the pc reg *)
 
 Module Same_PC_Rel <: RTL_STATE_REL.
   Definition brel (s1 s2 : rtl_state) := 
@@ -833,7 +833,7 @@ Hint Immediate set_ps_same_mem
   get_byte_same_mem choose_bits_same_mem
   : same_mem_db.
 
-(** * Lemmas about agree_over and agree_outside *)
+(** Lemmas about agree_over and agree_outside *)
 Definition agree_over_addr_region (r:Int32Ensemble) (s s':rtl_state) : Prop :=
   forall l:int32, Ensembles.In _ r l -> 
      AddrMap.get l (rtl_memory s) = AddrMap.get l (rtl_memory s').
@@ -892,11 +892,11 @@ Lemma same_mem_agree_outside : forall s s' r,
 Proof. intros. unfold agree_outside_addr_region. intros. congruence. Qed.
 
 
-(** * Lemmas about when a machine computation preserves the memory region 
-   outside of a segment. This property needs to be parametrized over the
-   segment register. ML's module system, however, can only parametrize
-   over modules. 
-*)
+(** Lemmas about when a machine computation preserves the memory region 
+ *  outside of a segment. This property needs to be parametrized over the
+ *  segment register. ML's module system, however, can only parametrize
+ *  over modules. 
+ *)
 Definition segAddrs (seg:segment_register) (s:rtl_state) : Int32Ensemble :=
   let m := rtl_mach_state s in
     addrRegion (seg_regs_starts m seg) (seg_regs_limits m seg).
@@ -1059,7 +1059,7 @@ Proof. unfold next_oracle_bit; intros. same_regs_tac. Qed.
 Hint Resolve set_addr32_same_regs next_oracle_bit_same_regs : same_regs_db.
 *)
 
-(** * Lemmas about same_regs_but *)
+(** Lemmas about same_regs_but *)
 
 (** r is not the same as op *)
 Definition reg_eq_operand (r:register) (op:operand) : bool := 
@@ -1069,7 +1069,8 @@ Definition reg_eq_operand (r:register) (op:operand) : bool :=
   end.
 
 (** s and s' have the same register values except for the possible 
-    register in op *)
+ *  register in op *)
+
 (*
 Definition state_same_regs_but (s:mach_state) (s':mach_state)
   (op:operand) : Prop := 
@@ -1158,7 +1159,7 @@ Proof. unfold step_logical_op; intros. same_regs_but_tac. Qed.
 *)
 
 
-(** * Lemmas about no_fail *)
+(** Lemmas about no_fail *)
 
 Definition no_fail (A:Type) (c:RTL A) := 
   forall s s', c s <> (Fail_ans _, s').
@@ -1229,7 +1230,7 @@ Hint Immediate set_ps_no_fail set_byte_no_fail get_ps_no_fail
   get_byte_no_fail choose_bits_no_fail
   : no_fail_db.
 
-(** * Lemmas about inBoundCodeAddr *)
+(** Lemmas about inBoundCodeAddr *)
 
 Definition inBoundCodeAddr (pc:int32) (s:rtl_state) := 
   pc <=32 CLimit s.
@@ -1260,7 +1261,7 @@ Lemma inBoundCodeAddr_equiv : forall s s' pc,
 Proof. unfold inBoundCodeAddr; intros. destruct H. congruence. Qed.
 *)
 
-(** * Lemmas about fetch_n *)
+(** Lemmas about fetch_n *)
 Lemma fetch_n_length : forall n pc s,
   length (fetch_n n pc s) = n.
 Proof. induction n; prover. Qed.
@@ -1288,7 +1289,7 @@ Proof. induction n.
       prover.
 Qed.    
 
-(** * upd_get lemmas *)
+(** upd_get lemmas *)
 (*
 Lemma set_pc_pc_reg : forall s s' v' pc,
   set_pc pc s = Succ (s', v') -> pc_reg s' = pc.
@@ -1302,14 +1303,14 @@ Proof. unfold set_reg; intros. destruct s'; inv H. simpl.
 Qed.
 *)
 
-(** * An unfolding database for proving properties of conversions *)
+(** An unfolding database for proving properties of conversions *)
 
 Hint Unfold load_Z load_int arith test load_reg set_reg cast_u cast_s
   get_seg_start get_seg_limit read_byte write_byte get_flag set_flag
   get_pc set_pc copy_ps : conv_unfold_db.
 
-(** * The property that if a conversion returns a pseudo register, its
-   index is less than the index of the current conversion state *)
+(** The property that if a conversion returns a pseudo register, its
+ *  index is less than the index of the current conversion state *)
 Definition conv_index_increase (A:Type) (cv:Conv A) :=
   forall cs v' cs',
     cv cs = (v', cs') -> c_next cs < c_next cs'.
@@ -1383,7 +1384,7 @@ Lemma fresh_pr_monotone : forall s (almost_i:pseudo_reg s -> rtl_instr) cs v' cs
   fresh almost_i cs = (v', cs') -> c_next cs < c_next cs'.
 Proof. unfold fresh. intros. prover. Qed.
 
-(** * Lemmas about a conversion preserves the property of same_seg_regs *)
+(** Lemmas about a conversion preserves the property of same_seg_regs *)
 
 Module Conv_Same_Seg_Regs := Conv_Prop (Same_Seg_Regs).
 Notation conv_same_seg_regs := Conv_Same_Seg_Regs.conv_prop.
@@ -1407,19 +1408,19 @@ Ltac conv_same_seg_regs_tac :=
             | [|- conv_same_seg_regs _] => auto with conv_same_seg_regs_db
           end).
 
-(** ** Lemmas for many conversion primitives can be proved by simply unfolding
-   their definitions and use the above conv_same_seg_regs_tac. However, there
-   are two cases when we want to state a separate lemma about a conversion
-   primitive and check the lemma into the hint databse:
-   (1) Some lemmas need manual intervention to prove, for example, 
-       induction-based proofs.
-   (2) If a primitive is used quite often in definitions, it is good to
-       state a separate lemma for it; after it is declared in the hint db, 
-       it provides a shortcut in the proof search;
-       for instance, lemmas about iload_op8, iload_op16, iload_32 and load_op
-       are added for this reason. Those could be proved by just unfolding them. 
-       But in conv_DIV for example, if we did that, the amount of time to prove
-       conv_same_seg_regs (conv_DIV ...) would be an order of magnitiude more.
+(** Lemmas for many conversion primitives can be proved by simply unfolding
+ *  their definitions and use the above conv_same_seg_regs_tac. However, there
+ *  are two cases when we want to state a separate lemma about a conversion
+ *  primitive and check the lemma into the hint databse:
+ *  (1) Some lemmas need manual intervention to prove, for example, 
+ *      induction-based proofs.
+ *  (2) If a primitive is used quite often in definitions, it is good to
+ *      state a separate lemma for it; after it is declared in the hint db, 
+ *      it provides a shortcut in the proof search;
+ *      for instance, lemmas about iload_op8, iload_op16, iload_32 and load_op
+ *      are added for this reason. Those could be proved by just unfolding them. 
+ *      But in conv_DIV for example, if we did that, the amount of time to prove
+ *      conv_same_seg_regs (conv_DIV ...) would be an order of magnitiude more.
  *)
 
 Lemma load_mem_n_same_seg_regs : forall seg addr n,
@@ -1506,8 +1507,8 @@ Qed.
 Hint Immediate conv_BS_aux_same_seg_regs compute_parity_aux_same_seg_regs :
   conv_same_seg_regs_db.
 
-(** * Lemmas about a conversion preserves the property of same_mem *)
-(* this property does not seem useful. remove it? *)
+(** Lemmas about a conversion preserves the property of same_mem *)
+(*  this property does not seem useful. remove it? *)
 
 Module Conv_Same_Mem := Conv_Prop (Same_Mem).
 Notation conv_same_mem := Conv_Same_Mem.conv_prop.
@@ -1550,8 +1551,8 @@ Qed.
 
 Hint Immediate iload_op32_same_mem : conv_same_mem_db.
 
-(** * Lemmas about a conversion preserves the property of
-   agree_outside_data_seg *)
+(** Lemmas about a conversion preserves the property of
+ *  agree_outside_data_seg *)
 Definition conv_agree_outside_seg (seg:segment_register) (A:Type) (cv:Conv A) :=
   forall cs (v:A) cs',
     cv cs = (v, cs')
@@ -1783,7 +1784,7 @@ Proof. unfold conv_agree_outside_seg. intros.
     eauto. eauto.
 Qed.
 
-(** ** a little prover for showing two segment registers are the same *)
+(** a little prover for showing two segment registers are the same *)
 Definition seg_eq (seg1 seg2 : segment_register) := seg1 = seg2.
 
 Lemma seg_eq_refl : forall seg, seg_eq seg seg. 
@@ -1936,7 +1937,7 @@ Qed.
 Hint Resolve set_Bit_mem_aos compute_parity_aux_aos conv_BS_aux_aos 
   : conv_agree_outside_seg_db.
 
-(** * Lemmas about a conversion preserves the property of same_pc *)
+(** Lemmas about a conversion preserves the property of same_pc *)
 
 Module Conv_Same_PC := Conv_Prop (Same_PC).
 Notation conv_same_pc := Conv_Same_PC.conv_prop.
@@ -2058,8 +2059,8 @@ Qed.
 Hint Immediate conv_BS_aux_same_pc compute_parity_aux_same_pc :
   conv_same_pc_db.
 
-(** * Lemmas about the property that conversions preserve the 
-   same_mach_state property *)
+(** Lemmas about the property that conversions preserve the 
+ *  same_mach_state property *)
 Module Conv_Same_Mach_State := Conv_Prop (Same_Mach_State).
 Notation conv_same_mach_state := Conv_Same_Mach_State.conv_prop.
 
@@ -2110,7 +2111,7 @@ Hint Immediate set_mem_n_same_mach_state : conv_same_mach_state_db.
 
 
 
-(** * Lemmas about the property that conversions preserve the no_fail property *)
+(** Lemmas about the property that conversions preserve the no_fail property *)
 Definition conv_no_fail (A:Type) (cv:Conv A) :=
   forall cs (v:A) cs',
     cv cs = (v, cs')
@@ -2273,10 +2274,10 @@ Hint Immediate conv_BS_aux_no_fail compute_parity_aux_no_fail :
   conv_no_fail_db.
 
 
-(** * A tactic that is the aggregate of all instruction properties *)
+(* A tactic that is the aggregate of all instruction properties *)
 
 (* In this unfolding tactic, note that I didn't unfold load_op and set_op as lemmas
-   about them should already be in the hint databases *)
+ * about them should already be in the hint databases *)
 Ltac unfold_instr_conv_tac :=
   unfold conv_AND, conv_OR, conv_XOR, conv_TEST, conv_logical_op, 
     conv_XADD, conv_NOT, conv_ADD, conv_MOV, conv_Jcc, conv_JMP, 
@@ -2341,12 +2342,13 @@ Lemma ADD_no_fail : forall pre w op1 op2,
     -> no_fail (RTL_step_list (runConv (conv_ADD pre w op1 op2))).
 Proof. intros. prove_instr. Qed.
 
-(** * Properties of non_cflow_instr, dir_cflow_instr, and nacl_jmp *)
+(** Properties of non_cflow_instr, dir_cflow_instr, and reins_jmp *)
 
-(** ** Showing that non_cflow_instr preserves the same seg registers *)
+(** Showing that non_cflow_instr preserves the same seg registers *)
+
 (* For some reason,  if I prove the following lemma with 
-   pre=emptyPrefix, the QED will take forever if I don't set
-   Opaque conv_BSWAP. Opaque conv_POP. *)
+ * pre=emptyPrefix, the QED will take forever if I don't set
+ * Opaque conv_BSWAP. Opaque conv_POP. *)
 Lemma nci_same_seg_regs: forall ins pre,
   non_cflow_instr pre ins = true
     -> same_seg_regs (RTL_step_list (instr_to_rtl pre ins)).
@@ -2359,7 +2361,7 @@ Qed.
 
 Hint Resolve nci_same_seg_regs : same_seg_regs_db.
 
-(** ** Showing that non_cflow_instr modifies only DS, SS, ES segments *)
+(** Showing that non_cflow_instr modifies only DS, SS, ES segments *)
 Lemma PUSH_aos : forall pre w op,
   conv_agree_outside_seg SS (conv_PUSH pre w op).
 Proof. unfold conv_PUSH, set_mem, set_mem32, set_mem16, set_mem8. 
@@ -2685,7 +2687,7 @@ Proof. intros.
   get_segment_op2_aos_tac op1 op2.
 Qed.
  
-(** ** Showing that non_cflow_instr does not modify the PC *)
+(** Showing that non_cflow_instr does not modify the PC *)
 
 Lemma nci_same_pc: forall ins pre,
   non_cflow_instr pre ins = true
@@ -2697,7 +2699,7 @@ Proof. intros.
     (discriminate H || prove_instr).
 Qed.
 
-(** ** Showing that dir_cflow_instr does not modify segment registers *)
+(** Showing that dir_cflow_instr does not modify segment registers *)
 
 Lemma dci_same_seg_regs: forall ins pre,
   dir_cflow_instr pre ins = true
@@ -2710,8 +2712,8 @@ Qed.
 
 Hint Resolve dci_same_seg_regs : same_seg_regs_db.
 
-(** ** Showing that dir_cflow_instr only modify SS memory
-       (only the call instruction will modify that) *)
+(** Showing that dir_cflow_instr only modify SS memory
+ *  (only the call instruction will modify that) *)
 
 Lemma CALL_aoss : forall pre near absolute op sel,
   conv_agree_outside_seg SS (conv_CALL pre near absolute op sel).
@@ -2734,7 +2736,7 @@ Proof. intros.
     (discriminate H || prove_instr).
 Qed.
 
-(** ** Showing that non_cflow_instr and dir_cflow_instr does not fail *)
+(** Showing that non_cflow_instr and dir_cflow_instr does not fail *)
 
 Lemma check_prefix_no_fail_1 : forall pre,
   only_op_override pre = true -> conv_no_fail (check_prefix pre).

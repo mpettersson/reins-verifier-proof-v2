@@ -9,7 +9,7 @@
    the License, or (at your option) any later version.
 *)
 
-(** Properties about the DFAs that we build for the FastVerifier.
+(** Properties about the DFAs that we build for the ReinsVerifier.
 *)
 Require Import Coqlib.
 Require Import Parser.
@@ -380,7 +380,7 @@ Proof.
   (* CLC_p *)
   punf CLC_p.
   (* CLD_p *)
-  (* FIX:  why does NACL accept CLD? *)
+  (* FIX:  why does Nativeclient accept CLD? *)
   punf CLD_p.
   (* CMOVcc_p *)
   punf CMOVcc_p ; repeat psimp ; repeat pinv ; repeat psimp ; destruct o1 ; 
@@ -400,7 +400,7 @@ Proof.
   unop DEC_p.
   (* DIV_p *)
   unop DIV_p.
-  (* FIX: why does NACL accept HLT? *)
+  (* FIX: why does NativeClient accept HLT? *)
   (* HLT_p *)
   punf HLT_p.
   (* IDIV_p *)

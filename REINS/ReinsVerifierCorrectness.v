@@ -1,40 +1,85 @@
-(* If the following hold,
-	All executable code resides in low memory
-	All exported symbols target low memory areas
-	No disassembled instructions spans a chunk boundary
-	static branches target low memory chunk boundaries
-	all computed jumps that do not reference the IAT are 
-		immediately preceded by and-masking 
-		instruction from Table 1 in the same chunk 
-	Computed jumps that read the IAT access a properly 
-		aligned IAT entry, and are preceded by an 
-		and-mask of the return address (call 
-		instructions must end on a chunk boundary 
-		rather than requiring a mask, since they push
-		their own return address 
-	There are no trap instructions; int or syscall 
-THEN:
-	These properties ensure that any unaligned instruction sequences
-concealed within untrusted, executable sections are not reachable
-at runtime.
-*)
-
-
-(* If ReinsVerifier is given any binary and it has all the properties,
-then the result holds. If it does not have all of them, then it does 
-not hold *)
-
+(*  This file is (now) part of REINS 
+ *
+ *  This file is adapted to serve as a part of the native code 
+ *  REwriting and IN-lining System (REINS) Verifier, as presented in 
+ *  "Securing Untrusted Code via Compiler-Agnostic Binary Rewriting" 
+ *  by Richard Wartell, Viswath Mohan, Kevin W. Hamlen, and Zhiqiang Lin. 
+ *
+ *  Originally, this file was part of RockSalt (by Greg Morrisett, Gang
+ *  Tan, Joseph Tassarotti, Jean-Baptiste Tristan, and Deward Gan) and
+ *  the Compcert verified compiler (Xavier Leroy, INRIA Paris-Rocquencourt) 
+ *
+ *  The University of Texas at Dallas students who have worked on this 
+ *  project include Benjamin Ferrell, Gil Lundquist, Kenneth Miller, 
+ *  Matthew Pettersson, Justin Sahs, and Brett Webster.
+ *)
 
 (* Copyright (c) 2011. Greg Morrisett, Gang Tan, Joseph Tassarotti, 
-   Jean-Baptiste Tristan, and Edward Gan.
+ * Jean-Baptiste Tristan, and Edward Gan.
+ *
+ * This file is part of RockSalt.
+ *
+ * This file is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation; either version 2 of
+ * the License, or (at your option) any later version.
+ *)
 
-   This file is part of RockSalt.
-
-   This file is free software; you can redistribute it and/or
-   modify it under the terms of the GNU General Public License as
-   published by the Free Software Foundation; either version 2 of
-   the License, or (at your option) any later version.
-*)
+(** A REINS rewritten binary is guarenteed 'safe' iff the following holds:
+ *      - All executable code resides in low memory
+ *	    - All exported symbols target low memory areas
+ *	    - No disassembled instructions spans a chunk boundary
+ *	    - Static branches target low memory chunk boundaries
+ *	    - All computed jumps that do not reference the IAT are immediately 
+ *	      preceded by and-masking instruction from Table 1 in the same chunk 
+ *	    - Computed jumps that read the IAT access a properly aligned IAT 
+ *	      entry, and are preceded by an and-mask of the return address (call 
+ *	      instructions must end on a chunk boundary rather than requiring 
+ *	      a mask, since they push their own return address 
+ *	    - There are no trap instructions; int or syscall 
+ *
+ *  MCP: This file has been addapted, as specified below, to verify 
+ *       REINS rewritten binaries.
+ *
+ *  Changed	- Lemma signed_safemask_eq
+ *		    - Proof of Lemma and_safeMask_aligned
+ *		    - Definition checkProgram
+ *		    - Definition process_buffer_aux
+ *		    - Definition process_buffer
+ *		    - Definition eqMemBuffer
+ *		    - Definition codeLoaded
+ *		    - Definition eqCode_after_trampoline
+ *		    - Definition Inv
+ *		    - Definition safeState
+ *		    - Lemma process_buffer_aux_nil
+ *		    - Lemma process_buffer_aux_addrRange
+ *		    - Lemma process_buffer_addrRange
+ *		    - Lemma process_buffer_aux_subset
+ *		    - Lemma process_buffer_aux_start_in
+ *		    - Lemma process_buffer_start_in
+ *		    - Lemma extract_disp_include
+ *		    - Lemma process_buffer_aux_inversion
+ *		    - 
+ *
+ *  Added	- Lemma safeMask_low_mem
+ *	    	- Lemma and_safeMask_low_mem
+ *	    	- Lemma fold_left_andb_forall
+ *	    	- Lemma eq_and_addr_mask 
+ *	    	- Lemma checkExports_corr
+ *	    	- Lemma checkIATAddresses_corr
+ *	    	- Lemma checkCallAlignment_corr
+ *	    	- Lemma checkExecSectionLowMem_corr
+ *	    	- Variable reinsjmp_nonIAT_dfa
+ *	    	- Variable reinsjmp_IAT_or_RET_dfa  
+ *	    	- Variable reinsjmp_IAT_CALL_dfa 
+ *	    	- Variable reinsjmp_nonIAT_mask 
+ *	    	- Variable reinsjmp_IAT_or_RET_mask
+ *	    	- Variable reinsjmp_IAT_CALL_p 
+ *	    	- Definition checkExecSection
+ *	    	- Fixpoint l2ll'
+ *	    	- Definition l2ll
+ *
+ *)
 
 Require Import Classical.
 Require Import Coqlib.
@@ -53,7 +98,7 @@ Require Import ReinsVerifierDFA.
 Require Import PEFormat.
 Require Import PETraversal.
 Require Import ReinsVerifier.
-Require Import ReinsDFACorrectness.
+Require Import DFACorrectness.
 Require Import REINSjmp.
 
 Import X86_PARSER_ARG.
@@ -246,7 +291,7 @@ Qed.
 (** * proving checkAligned is correct *)
 
 (* Unfolding checkAligned, 
-   checks that all multiple of the chunk size is in the list *)
+ *  checks that all multiple of the chunk size is in the list *)
 Lemma checkAligned_aux_unfold (startAddrs:Int32Set.t)(next:Z)(len:nat) :
     checkAligned_aux (startAddrs, next, len) = 
     match len with
@@ -319,8 +364,6 @@ Proof. unfold checkAligned. intros.
   apply Zmod_0_l.
 Qed.
 
-(* New Lemmas! *)
-
 Lemma fold_left_andb_forall : forall a l,
    fold_left andb (a::l) true = true ->
    a = true
@@ -389,19 +432,19 @@ Proof.
   rewrite <- int_eq_true_iff2.
   rewrite <- andb_true_iff.
   apply H. exact H0.
-  (*in order to apply Int32Set.for_all_spec on "Int32Set.for_all f s",
-    we must prove 'compatb f'; this unfolds to 
-    Proper (E.eq ==> Logic.eq) f, where E depends on the type of elements
-    of s.  This reads as "The respectful morphism applied to E.eq and Logic.eq
-    is proper", where,
-     - the "respectful morphism applied to binary relations (R : A -> A -> Prop)
-          and (R' : B -> B -> Prop)" gives the binary relation
-          (Rr : (A -> B) -> (A -> B) -> Prop) := fun f g => R x y -> R' (f x) (g y).
-     - a relation (R : A -> A -> Prop) is 'Proper' with respect to some element f
-       if (R f f) holds.
-    That is, 'compatb f' for (f : A -> B) says that it is possible to transform a
-    binary equality relation (R : A -> A -> Prop) to a binary relation over functions
-    of type (A -> B) such that f `=` f... that is, f "respects" standard equality*)
+  (* in order to apply Int32Set.for_all_spec on "Int32Set.for_all f s",
+   * we must prove 'compatb f'; this unfolds to 
+   * Proper (E.eq ==> Logic.eq) f, where E depends on the type of elements
+   * of s.  This reads as "The respectful morphism applied to E.eq and Logic.eq
+   * is proper", where,
+   *  - the "respectful morphism applied to binary relations (R : A -> A -> Prop)
+   *       and (R' : B -> B -> Prop)" gives the binary relation
+   *       (Rr : (A -> B) -> (A -> B) -> Prop) := fun f g => R x y -> R' (f x) (g y).
+   *  - a relation (R : A -> A -> Prop) is 'Proper' with respect to some element f
+   *    if (R f f) holds.
+   * That is, 'compatb f' for (f : A -> B) says that it is possible to transform a
+   * binary equality relation (R : A -> A -> Prop) to a binary relation over functions
+   * of type (A -> B) such that f `=` f... that is, f "respects" standard equality*)
   unfold Morphisms.Proper , Morphisms.respectful.
   intros. rewrite -> int_eq_true_iff2 in H1. rewrite -> H1. reflexivity.
 Qed.
@@ -454,10 +497,10 @@ Section VERIFIER_CORR.
   Variable reinsjmp_IAT_CALL_p : parser instruction_t.
 
   (* The trampoline region is a blessed region in the code segment. 
-     It's inserted there by the loader and never checked by the validator.
-     The idea is that if we jump into the trampoline region and the PC is aligned,
-     then that is a safe state.
-     This variable marks the limit of the trampoline region *)
+   * It's inserted there by the loader and never checked by the validator.
+   * The idea is that if we jump into the trampoline region and the PC is aligned,
+   * then that is a safe state.
+   * This variable marks the limit of the trampoline region *)
   Variable trampoline_limit : int32.
 
   Definition checkProgram := 
@@ -521,29 +564,29 @@ Section VERIFIER_CORR.
   (** * Definitions for aiding the verifier correctness proof *)
 
   (* Basic ideas of developing correctness proof of the fast verifier:
-     (1) Define a pseudo instruction to be either a non-control-flow instruction, 
-         a direct-jump instruction, or a nacljmp (which corresponds
-         to two real instructions);
-     (2) Formalize the invariant that should be satisfied between pseudo
-         instructions: safeState, which says that pc is one of the
-         start addresses of pseudo instructions.
-     (3) Introduce a notion of safeInK (k, s, code), which means s will
-         reach a safe state within k steps and it won't fail before reaching
-         a safe state.
-     (4) Show that any safe state also satifies safeInK(k,s,code) for some k>0.
-         This proof is by case analysis over the current pseudo instruction. 
-         If it is a non-control-flow or direct-jump instruction, then 
-         safeInK(1,s,code). If it's a nacljmp, then safeInK(2,s,code). 
-     (5) Show the initial state is a safe state. Then using (4), we know
-         the initial state will reach a safe state s1; similarly, s1 will
-         reach a safe state s2; ... By def of safeInK, none of these
-         states (and the intermediate states) will fail.
-
-     Note the above framework is general in that (i) it accommodates other
-     pseudo instructions, not just nacljmp; (ii) it acccommodates trampolines;
-     we just need an axiom assuming after jumping to a trampoline, the machine
-     will come back to a safe state in a finite number of steps (that is,
-     safeInK for some k) *)
+   *  (1) Define a pseudo instruction to be either a non-control-flow instruction, 
+   *      a direct-jump instruction, or a reinsjmp (which corresponds
+   *      to two real instructions);
+   *  (2) Formalize the invariant that should be satisfied between pseudo
+   *      instructions: safeState, which says that pc is one of the
+   *      start addresses of pseudo instructions.
+   *  (3) Introduce a notion of safeInK (k, s, code), which means s will
+   *      reach a safe state within k steps and it won't fail before reaching
+   *      a safe state.
+   *  (4) Show that any safe state also satifies safeInK(k,s,code) for some k>0.
+   *      This proof is by case analysis over the current pseudo instruction. 
+   *      If it is a non-control-flow or direct-jump instruction, then 
+   *      safeInK(1,s,code). If it's a reinsjmp, then safeInK(2,s,code). 
+   *  (5) Show the initial state is a safe state. Then using (4), we know
+   *      the initial state will reach a safe state s1; similarly, s1 will
+   *      reach a safe state s2; ... By def of safeInK, none of these
+   *      states (and the intermediate states) will fail.
+   *
+   *  Note the above framework is general in that (i) it accommodates other
+   *  pseudo instructions, not just reinsjmp; (ii) it acccommodates trampolines;
+   *  we just need an axiom assuming after jumping to a trampoline, the machine
+   *  will come back to a safe state in a finite number of steps (that is,
+   *  safeInK for some k) *)
 
 
   (* Checks whether the memory of s starting at addr_offset is equal to buffer *)
@@ -554,8 +597,9 @@ Section VERIFIER_CORR.
 
 
   (* note: needed adjustments if consider the trampoline area *)
+
   (* note: the range of addresses in the code segment is [CStart s, CStart s + Climit s],
-     the length of the code segment is CLimit s + 1 *)
+   * the length of the code segment is CLimit s + 1 *)
   Definition codeLoaded (buffer: list (list int8)) (s:rtl_state) := 
     eqMemBuffer buffer s (CStart s) /\ 
     Z_of_nat (length buffer) = unsigned (CLimit s) + 1.
@@ -613,9 +657,9 @@ Section VERIFIER_CORR.
     forall s', step s <> (Fail_ans _, s').
 
   (* The initial state can reach a safe state within k steps; the
-     definition does not assume the step relation is
-     deterministic; so the initial state may reach a safe state
-     in different number of steps along different paths *)
+   * definition does not assume the step relation is
+   * deterministic; so the initial state may reach a safe state
+   * in different number of steps along different paths *)
   Fixpoint safeInK (k:nat) (s:rtl_state) (inv:Inv) := 
     match k with 
       | O => False
@@ -626,8 +670,7 @@ Section VERIFIER_CORR.
   Definition safeInSomeK (s:rtl_state) (inv:Inv) := 
     exists k, safeInK k s inv.
 
-  (* An equivalence relation between states that says the code
-     region is immutable *)
+  (* An equivalence relation between states that says the code region is immutable *)
   (* Checks that two code regions are equal *)
   Definition eqCodeRegion (s s':rtl_state) :=
     CStart s = CStart s' /\ CLimit s = CLimit s' /\
@@ -635,8 +678,8 @@ Section VERIFIER_CORR.
     agree_over_addr_region (segAddrs CS s) s s'.
 
   (** Check region [start1, start1+limit1] is a subset of
-     [start2, start2+limit2]; For simplicity, neither region can wrap
-     around the 32-bit address space. *)
+   *  [start2, start2+limit2]; For simplicity, neither region can wrap
+   *  around the 32-bit address space. *)
   Definition subsetRegion (start1 limit1 start2 limit2:int32) : bool :=
     andb (int32_lequ_bool start2 start1)
       (int32_lequ_bool (start1 +32 limit1) (start2 +32 limit2)).
@@ -965,7 +1008,7 @@ Section VERIFIER_CORR.
   Qed.
   
   (* If a state has good segments, then by taking an RTL step,
-     then the states agree on the same code region *)  
+   * then the states agree on the same code region *)  
   Lemma eqCodeRegion_intro2 : 
     forall (A:Type) (c:RTL A) (s s':rtl_state) (v':A),
       checkSegments s = true -> c s = (Okay_ans v', s')
@@ -983,7 +1026,7 @@ Section VERIFIER_CORR.
   Qed.
 
   (* reflexive lemma, the code region of s agrees with the code 
-     region of s *)
+   * region of s *)
   Lemma eqCodeRegion_refl : forall s,
     checkSegments s = true -> eqCodeRegion s s.
   Proof. intros. unfold eqCodeRegion. repeat split; try congruence.
@@ -1007,7 +1050,7 @@ Section VERIFIER_CORR.
   Opaque Decode.X86_PARSER.parse_byte.
 
   (* Give it a chunk of memory and it gives the instruction at that location
-     if you apply 'this' function it will not change the RTL state *)
+   * if you apply 'this' function it will not change the RTL state *)
   Lemma parse_instr_aux_same_state : forall n pc len ps,
     same_rtl_state (parse_instr_aux n pc len ps).
   Proof. unfold same_rtl_state.
@@ -1245,7 +1288,7 @@ Section VERIFIER_CORR.
         SSCase "pc=start".  rewrite H4. omega.
         SSCase "pc in (allStartAddrs - ({start} \/ currStartAddrs)".
          process_buffer_aux_Sn_tac.
-         SSSCase "nacljmp_dfa matches". clear Hd1 Hd2.
+         SSSCase "reinsjmp_dfa matches". clear Hd1 Hd2.
            assert (length remaining3 > 0)%nat by (destruct remaining3; pbprover).
            use_lemma dfa_recognize_inv by eassumption. simplHyp.
            use_lemma process_buffer_arith_facts by eassumption. simplHyp.
@@ -1316,7 +1359,7 @@ Section VERIFIER_CORR.
       SCase "tokens<>nil".
         assert (length (t::tokens') >= 1)%nat by (simpl; omega).
         process_buffer_aux_Sn_tac.
-        SSCase "nacljmp_dfa matches". clear Hd1 Hd2.
+        SSCase "reinsjmp_dfa matches". clear Hd1 Hd2.
           use_lemma IHn by eassumption.
           simplHyp.
           split.
@@ -1361,7 +1404,7 @@ Section VERIFIER_CORR.
       SCase "n=0". discriminate.
       SCase "S n".
         process_buffer_aux_Sn_tac.
-        SSCase "nacljmp_dfa matches". clear Hd1 Hd2.
+        SSCase "reinsjmp_dfa matches". clear Hd1 Hd2.
           use_lemma process_buffer_aux_subset by eassumption.
           unfold Int32Set.Subset in *.
           apply H2. apply Int32SetFacts.add_1. apply int_eq_refl.
@@ -1457,7 +1500,7 @@ Section VERIFIER_CORR.
     Case "S n". intros.
       process_buffer_aux_tac.
       SCase "tokens = nil". pbprover.
-      SCase "tokens<>nil; nacljmp_dfa matches". clear Hd1 Hd2.
+      SCase "tokens<>nil; reinsjmp_dfa matches". clear Hd1 Hd2.
         use_lemma dfa_recognize_inv by eassumption. genSimpl.
         destruct (@Int32Set_in_dichotomy pc start _ _ H2). 
         SSCase "pc=start". subst pc. 
@@ -1600,7 +1643,7 @@ Section VERIFIER_CORR.
                 (dfa_recognize 256 non_cflow_dfa tokens' = Some (len, remaining) \/
                  (dfa_recognize 256 dir_cflow_dfa tokens' = Some (len, remaining) /\
                   includeAllJmpTargets pc len tokens' jmpTargets) \/
-                 dfa_recognize 256 nacljmp_dfa tokens' = Some (len, remaining)).
+                 dfa_recognize 256 reinsjmp_dfa tokens' = Some (len, remaining)).
   Proof. Admitted.
 *)
 (* TODO PROOF - OMG...
@@ -1787,16 +1830,18 @@ Section VERIFIER_CORR.
   Lemma codeLoaded_fetch_n : forall code s k pc code' gSize guardZone,
     codeLoaded code s
       -> (pc < length code)%nat
-      -> code' = skipn pc code
+      -> code' = skipn pc (list_flatten code)
       -> fetch_n gSize (CStart s +32_n (length code)) s = guardZone
       -> (k < gSize)%nat
       -> fetch_n k (CStart s +32_n pc) s = firstn k (code' ++ guardZone).
-  Proof. induction k.
+  Proof. Admitted.
+ (* TODO PROOF 
+   Proof. induction k.
     Case "k=0". prover.
     Case "S k". intros.
       destruct code' as [| byte code''].
       SCase "code'=nil".
-        assert (length (skipn pc code) + pc = length code)%nat as H10.
+        assert (length (skipn pc (list_flatten code)) + pc = length code)%nat as H10.
           apply skipn_length.  trivial.
         rewrite <- H1 in H10. simpl in H10. subst pc. 
         contradict H0. omega.
@@ -1831,7 +1876,7 @@ Section VERIFIER_CORR.
               simpl. rewrite H4. subst guardZone.
               apply fetch_n_sub_list. omega.
               prover.
-  Qed.
+  Qed.*)
 
   (* todo: move *)
   Notation nat_of_int32 i := (Zabs_nat (unsigned i)).
@@ -1847,18 +1892,20 @@ Section VERIFIER_CORR.
   Lemma codeLoaded_fetch_n_2 : forall code s k pc code' gSize guardZone,
     codeLoaded code s
       -> unsigned pc < Z_of_nat (length code)
-      -> code' = skipn (nat_of_int32 pc) code
+      -> code' = skipn (nat_of_int32 pc) (list_flatten code)
       -> fetch_n gSize (CStart s +32_n (length code)) s = guardZone
       -> (k < gSize)%nat
       -> fetch_n k (CStart s +32 pc) s = firstn k (code' ++ guardZone).
+  Proof. Admitted.
+  (* TODO PROOF - Need to proove codeLoaded_fetch_n first...
   Proof. intros. 
     rewrite <- (int32_of_nat_of_int32 pc).
-    assert (nat_of_int32 pc < Datatypes.length code)%nat.
+    assert (nat_of_int32 pc < Datatypes.length (list_flatten code))%nat.
       apply inj_lt_rev. rewrite inj_Zabs_nat.
       rewrite Zabs_eq by int32_prover.
       assumption.
     eapply codeLoaded_fetch_n; eassumption.
-  Qed.
+  Qed.*)
 
   Lemma Zdiv_eucl_mult : forall a b c,
     b > 0 -> a = b * c -> Zdiv_eucl a b = (c, 0).
@@ -1895,7 +1942,7 @@ Section VERIFIER_CORR.
   Qed.
 
   Lemma skipn_byte2token_len : forall tokens n code,
-    tokens = skipn n (List.map FastVerifier.byte2token code)
+    tokens = skipn n (List.map ReinsVerifier.byte2token code)
       -> (n < length code)%nat
       -> (length tokens + n = length code)%nat.
   Proof. intros. rewrite H.
@@ -1945,10 +1992,10 @@ Section VERIFIER_CORR.
   
   Hint Resolve run_rep_same_mem_dci : same_mem_db.
 
-  Lemma run_rep_same_mem_nacljmp_snd : forall pre1 ins1 pre2 ins2 dpc,
-    nacljmp_mask_instr pre1 ins1 pre2 ins2 = true
+  Lemma run_rep_same_mem_reinsjmp_snd : forall pre1 ins1 pre2 ins2 dpc,
+    reinsjmp_nonIAT_mask_instr pre1 ins1 pre2 ins2 = true
       -> same_mem (run_rep pre2 ins2 dpc).
-  Proof. unfold nacljmp_mask_instr. intros.
+  Proof. unfold reinsjmp_nonIAT_mask_instr. intros.
     destruct ins1; bool_elim_tac; try discriminate.
     destruct_head in H0; try discriminate.
     destruct op1; try discriminate.
@@ -1957,7 +2004,7 @@ Section VERIFIER_CORR.
     destruct ins2; try discriminate.
   Qed.
 
-  Hint Resolve run_rep_same_mem_nacljmp_snd : same_mem_db.
+  Hint Resolve run_rep_same_mem_reinsjmp_snd : same_mem_db.
 
   Lemma run_rep_PC : forall s v' s' pre ins default_pc,
     run_rep pre ins default_pc s = (Okay_ans v', s')
@@ -2401,9 +2448,11 @@ Section VERIFIER_CORR.
 
   Lemma pc_at_end_is_safe : forall s code pc startAddrs,
     codeLoaded code s
-      -> checkProgram code = (true, startAddrs)
+      -> checkProgram' code = (true, startAddrs)
       -> pc = int32_of_nat (length code)
       -> Int32Set.In pc startAddrs \/ ~inBoundCodeAddr pc s.
+  Proof. Admitted. 
+(* TODO PROOF - Almost there, brain is running low on, um, brain gas...
   Proof. unfold codeLoaded; intros.
     simplHyp.
     generalize (unsigned_range (CLimit s)); intro.
@@ -2419,17 +2468,17 @@ Section VERIFIER_CORR.
         apply mkint_eq. apply Z_mod_same_full.
       generalize (unsigned_range (CLimit s)); intro.
       assert ((length code) > 0)%nat. omega.
-      unfold checkProgram, FastVerifier.checkProgram in H0.
+      unfold checkProgram, ReinsVerifier.checkProgram' in H0.
       remember_destruct_head in H0 as pb; try discriminate H0.
       destruct p. inversion H0; subst.
       apply process_buffer_start_in in Hpb. prover. assumption.
-  Qed.
+  Qed. *)
 
   Lemma nci_safeInSomeK : forall s pre ins len inv startAddrs,
     fetch_instruction (PC s) s = (Okay_ans (pre, ins, len), s)
       -> non_cflow_instr pre ins = true
       -> safeState s inv
-      -> checkProgram (snd inv) = (true, startAddrs)
+      -> checkProgram' (snd inv) = (true, startAddrs)
       -> goodDefaultPC ((PC s) +32_p len) startAddrs (length (snd inv))
       -> safeInSomeK s inv.
   Proof. unfold safeInSomeK. intros. 
@@ -2439,7 +2488,7 @@ Section VERIFIER_CORR.
       unfold safeState in H1. prover.
       eapply nci_nextStepNoFail; try eassumption.
       intros. unfold safeState. 
-        assert (Int32Set.In (PC s) (snd (checkProgram code))).
+        assert (Int32Set.In (PC s) (snd (checkProgram' code))).
           destruct H6. trivial.
           use_lemma step_immed_pc_inBound by eassumption.
             contradiction.
@@ -2449,7 +2498,7 @@ Section VERIFIER_CORR.
           unfold Same_Seg_Regs_Rel.brel in *. prover.
         assert (unsigned (CLimit s') + 1 = Z_of_nat (length code)).
           unfold codeLoaded in H8. prover.
-        assert (Int32Set.In (PC s') (snd (checkProgram code)) \/
+        assert (Int32Set.In (PC s') (snd (checkProgram' code)) \/
                 ~ inBoundCodeAddr (PC s') s').
           use_lemma nci_step_defaultPC by eassumption.
           destruct H15.
@@ -2808,13 +2857,15 @@ Section VERIFIER_CORR.
   (* any aligned address is a safe program counter *)
   Lemma aligned_addr_safePC : forall s inv pc,
     safeState s inv -> aligned pc
-      -> Int32Set.In pc (snd (checkProgram (snd inv))) \/ ~ inBoundCodeAddr pc s.
+      -> Int32Set.In pc (snd (checkProgram' (snd inv))) \/ ~ inBoundCodeAddr pc s.
+  Proof. Admitted.
+(* TODO PROOF  
   Proof. intros. safestate_unfold_tac.
-    unfold checkProgram in *. simpl.
-    remember_rev (FastVerifier.checkProgram non_cflow_dfa dir_cflow_dfa nacljmp_dfa
-                  code) as cp.
-    destruct cp as [b startAddrs].
-    unfold FastVerifier.checkProgram in Hcp.
+    unfold checkProgram' in *. simpl.
+    remember_rev (ReitnsVerifier.checkProgram' non_cflow_dfa dir_cflow_dfa reinsjmp_nonIAT_dfa
+         reinsjmp_IAT_JMP_or_RET_dfa reinsjmp_IAT_CALL_dfa code) as cp.
+    destruct cp as b startAddrs].
+    unfold ReinsVerifier.checkProgram' in Hcp.
     destruct_head in Hcp; [idtac | prover].
     destruct p. inversion Hcp. subst. 
     simpl in H1. bool_elim_tac.
@@ -2830,16 +2881,16 @@ Section VERIFIER_CORR.
         rewrite ZOrderedType.Z_as_DT.eqb_eq in H0.
         assumption.
     Case "pc > (CLimit s)". right. prover.
-  Qed.
+  Qed. *)
 
   Lemma dci_step_safePC : forall s s' pre ins len inv,
     fetch_instruction (PC s) s = (Okay_ans (pre, ins, len), s)
       -> dir_cflow_instr pre ins = true
       -> safeState s inv
-      -> goodDefaultPC ((PC s) +32_p len) (snd (checkProgram (snd inv))) (length (snd inv))
-      -> goodJmp ins ((PC s) +32_p len) (snd (checkProgram (snd inv))) = true
+      -> goodDefaultPC ((PC s) +32_p len) (snd (checkProgram' (snd inv))) (length (snd inv))
+      -> goodJmp ins ((PC s) +32_p len) (snd (checkProgram' (snd inv))) = true
       -> s ==> s'
-      -> Int32Set.In (PC s') (snd (checkProgram (snd inv))) \/ 
+      -> Int32Set.In (PC s') (snd (checkProgram' (snd inv))) \/ 
          ~ inBoundCodeAddr (PC s') s'.
   Proof. unfold inBoundCodeAddr. intros.
     use_lemma dci_step_same_seg_regs by eassumption.
@@ -2865,7 +2916,7 @@ Section VERIFIER_CORR.
       destruct H13.
       SCase "PC s' = PC s +32_p len".
         destruct H2. left. prover.
-          remember_rev (checkProgram code) as cp.
+          remember_rev (checkProgram' code) as cp.
           destruct cp as [t startAddrs].
           simpl in H8. subst t.
           use_lemma pc_at_end_is_safe by eassumption.
@@ -2890,9 +2941,9 @@ Section VERIFIER_CORR.
     fetch_instruction (PC s) s = (Okay_ans (pre, ins, len), s)
       -> dir_cflow_instr pre ins = true
       -> safeState s inv
-      -> checkProgram (snd inv) = (true, startAddrs)
+      -> checkProgram' (snd inv) = (true, startAddrs)
       -> goodDefaultPC ((PC s) +32_p len) startAddrs (length (snd inv))
-      -> goodJmp ins ((PC s) +32_p len) (snd (checkProgram (snd inv))) = true
+      -> goodJmp ins ((PC s) +32_p len) (snd (checkProgram' (snd inv))) = true
       -> safeInSomeK s inv.
   Proof. unfold safeInSomeK. intros. 
     dupHyp H1. safestate_unfold_tac.
@@ -2908,12 +2959,12 @@ Section VERIFIER_CORR.
   Qed. 
 
 
-  (** ** the proof that nacljmp is safe in two steps *)
-  Lemma nacljmp_first_non_cflow_instr : forall pre1 ins1 pre2 ins2,
-    nacljmp_mask_instr pre1 ins1 pre2 ins2 = true 
+  (** ** the proof that reinsjmp is safe in two steps *)
+  Lemma reinsjmp_first_non_cflow_instr : forall pre1 ins1 pre2 ins2,
+    reinsjmp_nonIAT_mask_instr pre1 ins1 pre2 ins2 = true 
       -> non_cflow_instr pre1 ins1 = true.
   Proof. intros.
-    unfold nacljmp_mask_instr in H.
+    unfold reinsjmp_nonIAT_mask_instr in H.
     destruct ins1; bool_elim_tac; try discriminate.
     assert (either_prefix pre1 = true).
       clear H0. destruct pre1.
@@ -2928,16 +2979,16 @@ Section VERIFIER_CORR.
     simpl. prover.
   Qed.
 
-  Lemma nacljmp_no_prefix : forall pre1 ins1 pre2 ins2,
-    nacljmp_mask_instr pre1 ins1 pre2 ins2 = true 
+  Lemma reinsjmp_no_prefix : forall pre1 ins1 pre2 ins2,
+    reinsjmp_nonIAT_mask_instr pre1 ins1 pre2 ins2 = true 
       -> no_prefix pre1 = true /\ no_prefix pre2 = true.
-  Proof. unfold nacljmp_mask_instr; intros. bool_elim_tac.
+  Proof. unfold reinsjmp_nonIAT_mask_instr; intros. bool_elim_tac.
     prover.
   Qed.
 
-  Lemma nacljmp_mask_PC : forall s s' pre1 ins1 len1 pre2 ins2 inv,
+  Lemma reinsjmp_mask_PC : forall s s' pre1 ins1 len1 pre2 ins2 inv,
     fetch_instruction (PC s) s = (Okay_ans (pre1, ins1, len1), s)
-      -> nacljmp_mask_instr pre1 ins1 pre2 ins2 = true
+      -> reinsjmp_nonIAT_mask_instr pre1 ins1 pre2 ins2 = true
       -> safeState s inv
       -> s ==> s'
       -> PC s' = PC s +32_p len1.
@@ -2948,10 +2999,10 @@ Section VERIFIER_CORR.
     assert (s0 = s1) by congruence.
     subst v0 s1.
     assert (non_cflow_instr pre1 ins1 = true).
-      eapply nacljmp_first_non_cflow_instr; eassumption.
+      eapply reinsjmp_first_non_cflow_instr; eassumption.
     assert (H20:same_pc (RTL_step_list (instr_to_rtl pre1 ins1))).
       eapply nci_same_pc; eassumption.
-    use_lemma nacljmp_no_prefix by eassumption.
+    use_lemma reinsjmp_no_prefix by eassumption.
     simplHyp. unfold no_prefix in H12.
     do 4 (destruct_head in H12; try congruence).
       rtl_okay_break.
@@ -2959,10 +3010,10 @@ Section VERIFIER_CORR.
       rewrite <- H22. unfold flush_env, set_loc in *. prover.
   Qed.
 
-  Lemma nacljmp_snd_no_fail : forall pre1 ins1 pre2 ins2,
-    nacljmp_mask_instr pre1 ins1 pre2 ins2 = true 
+  Lemma reinsjmp_snd_no_fail : forall pre1 ins1 pre2 ins2,
+    reinsjmp_nonIAT_mask_instr pre1 ins1 pre2 ins2 = true 
       -> no_fail (RTL_step_list (instr_to_rtl pre2 ins2)).
-  Proof. unfold nacljmp_mask_instr; intros. 
+  Proof. unfold reinsjmp_nonIAT_mask_instr; intros. 
     destruct ins1; bool_elim_tac; try discriminate.
     (destruct_head in H0; try discriminate H0).
     destruct op1; try discriminate H0.
@@ -2982,10 +3033,10 @@ Section VERIFIER_CORR.
   Qed.
 
   
-  Lemma nacljmp_snd_nextStepNoFail : forall s pre1 ins1 pre2 ins2 len2,
+  Lemma reinsjmp_snd_nextStepNoFail : forall s pre1 ins1 pre2 ins2 len2,
     fetch_instruction (PC s) s = (Okay_ans (pre2, ins2, len2), s)
       -> checkSegments s = true
-      -> nacljmp_mask_instr pre1 ins1 pre2 ins2 = true 
+      -> reinsjmp_nonIAT_mask_instr pre1 ins1 pre2 ins2 = true 
       -> nextStepNoFail s.
   Proof. unfold nextStepNoFail, step, in_seg_bounds_rng.
     intros. intro Hc.
@@ -2999,7 +3050,7 @@ Section VERIFIER_CORR.
       assert (s0 = s1) by prover.
       subst v0 s1.
       assert (no_fail (RTL_step_list (instr_to_rtl pre2 ins2))) 
-        by (eauto using nacljmp_snd_no_fail).
+        by (eauto using reinsjmp_snd_no_fail).
       contradict Hc.
       (match goal with
          | [|-?c _ <> (Fail_ans _, _)] => 
@@ -3009,13 +3060,13 @@ Section VERIFIER_CORR.
       remember_rev (lock_rep pre2) as lr.
       destruct lr. destruct l.
         Case "lock". 
-          apply nacljmp_no_prefix in H1. simplHyp. 
+          apply reinsjmp_no_prefix in H1. simplHyp. 
           apply no_prefix_no_lock_rep in H6. congruence.
         Case "rep". 
-          apply nacljmp_no_prefix in H1. simplHyp. 
+          apply reinsjmp_no_prefix in H1. simplHyp. 
           apply no_prefix_no_lock_rep in H6. congruence.
         Case "repn". 
-          apply nacljmp_no_prefix in H1. simplHyp. 
+          apply reinsjmp_no_prefix in H1. simplHyp. 
           apply no_prefix_no_lock_rep in H6. congruence.
         Case "none". no_fail_tac.
   Qed.
@@ -3061,7 +3112,7 @@ Section VERIFIER_CORR.
         trivial.
   Qed.        
 
-  Lemma nacljmp_mask_reg_aligned : forall pre r1 wd cs r cs' s v' s',
+  Lemma reinsjmp_mask_reg_aligned : forall pre r1 wd cs r cs' s v' s',
     conv_AND pre true (Reg_op r1) (Imm_op wd) cs = (r, cs')
       -> no_prefix pre = true
       -> signed wd = signed safeMask
@@ -3141,10 +3192,10 @@ Section VERIFIER_CORR.
     eapply and_safeMask_aligned. assumption.
   Qed.
 
-  Lemma nacljmp_snd_same_seg_regs : forall pre1 ins1 pre2 ins2,
-    nacljmp_mask_instr pre1 ins1 pre2 ins2 = true
+  Lemma reinsjmp_snd_same_seg_regs : forall pre1 ins1 pre2 ins2,
+    reinsjmp_nonIAT_mask_instr pre1 ins1 pre2 ins2 = true
       -> same_seg_regs (RTL_step_list (instr_to_rtl pre2 ins2)).
-  Proof. unfold nacljmp_mask_instr. intros.
+  Proof. unfold reinsjmp_nonIAT_mask_instr. intros.
       destruct ins1; bool_elim_tac; try discriminate H0.
       destruct_head in H0; try discriminate.
       destruct op1; try discriminate.
@@ -3155,10 +3206,10 @@ Section VERIFIER_CORR.
       unfold instr_to_rtl, check_prefix. prove_instr.
   Qed.
 
-  Lemma nacljmp_snd_step_same_seg_regs : 
+  Lemma reinsjmp_snd_step_same_seg_regs : 
    forall s s' code pre1 ins1 pre2 ins2 len2,
     fetch_instruction (PC s) s = (Okay_ans (pre2, ins2, len2), s)
-      -> nacljmp_mask_instr pre1 ins1 pre2 ins2 = true 
+      -> reinsjmp_nonIAT_mask_instr pre1 ins1 pre2 ins2 = true 
       -> codeLoaded code s
       -> checkSegments s = true
       -> s ==> s'
@@ -3169,19 +3220,19 @@ Section VERIFIER_CORR.
     assert (v0 = (pre2, ins2 , len2)) by congruence.
     assert (s0 = s1) by congruence.
     subst v0 s1.
-    unfold nacljmp_mask_instr in H0.
+    unfold reinsjmp_nonIAT_mask_instr in H0.
     assert (same_seg_regs (RTL_step_list (instr_to_rtl pre2 ins2))).
-      eauto using nacljmp_snd_same_seg_regs.
+      eauto using reinsjmp_snd_same_seg_regs.
     apply Same_Seg_Regs_Rel.brel_trans with (s2:=s0).
       same_seg_regs_rel_tac.
       same_seg_regs_rel_tac.
   Qed.
 
-  (* todo: a tactic for unfolding nacljmp_mask_instr *)
-  Lemma nacljmp_snd_aoss : forall pre1 ins1 pre2 ins2,
-    nacljmp_mask_instr pre1 ins1 pre2 ins2 = true
+  (* todo: a tactic for unfolding reinsjmp_nonIAT_mask_instr *)
+  Lemma reinsjmp_snd_aoss : forall pre1 ins1 pre2 ins2,
+    reinsjmp_nonIAT_mask_instr pre1 ins1 pre2 ins2 = true
       -> agree_outside_seg SS (RTL_step_list (instr_to_rtl pre2 ins2)).
-  Proof. unfold nacljmp_mask_instr; intros.
+  Proof. unfold reinsjmp_nonIAT_mask_instr; intros.
       destruct ins1; bool_elim_tac; try discriminate H0.
       destruct_head in H0; try discriminate.
       destruct op1; try discriminate.
@@ -3193,9 +3244,9 @@ Section VERIFIER_CORR.
   Qed.
 
   (* todo : maybe use a step lemma to parametrize over the property of ins2 *)
-  Lemma nacljmp_snd_step_aoss : forall s s' code pre1 ins1 pre2 ins2 len2,
+  Lemma reinsjmp_snd_step_aoss : forall s s' code pre1 ins1 pre2 ins2 len2,
     fetch_instruction (PC s) s = (Okay_ans (pre2, ins2, len2), s)
-      -> nacljmp_mask_instr pre1 ins1 pre2 ins2 = true
+      -> reinsjmp_nonIAT_mask_instr pre1 ins1 pre2 ins2 = true
       -> codeLoaded code s
       -> checkSegments s = true
       -> s ==> s'
@@ -3207,7 +3258,7 @@ Section VERIFIER_CORR.
     assert (s0 = s1) by congruence.
     subst v0 s1.
     assert (H20: agree_outside_seg SS (RTL_step_list (instr_to_rtl pre2 ins2))).
-      eauto using nacljmp_snd_aoss.
+      eauto using reinsjmp_snd_aoss.
     assert (H30: segAddrs SS s = segAddrs SS s0).
       unfold segAddrs. unfold flush_env in *. prover.
     destruct (lock_rep pre2).
@@ -3219,9 +3270,9 @@ Section VERIFIER_CORR.
           assert (H32: agree_outside_seg SS 
                    (run_rep pre2 ins2 (add (PC s0) (repr (Zpos len2))))).
             apply same_mem_agree_outside_seg.
-            eapply run_rep_same_mem_nacljmp_snd; eassumption.
+            eapply run_rep_same_mem_reinsjmp_snd; eassumption.
             eapply run_rep_same_seg_regs.
-            eauto using nacljmp_snd_same_seg_regs.
+            eauto using reinsjmp_snd_same_seg_regs.
           eapply H32; eassumption.
         (apply agree_outside_addr_region_trans with (s2:=s0); 
           [aoar_tac | rewrite H30; aoar_tac]).
@@ -3339,16 +3390,18 @@ Section VERIFIER_CORR.
   Qed.
   Transparent set_mem_n.
 
-  Lemma nacljmp_step_safePC : forall s s' s'' pre1 ins1 len1 pre2 ins2 len2 inv,
+  Lemma reinsjmp_step_safePC : forall s s' s'' pre1 ins1 len1 pre2 ins2 len2 inv,
     fetch_instruction (PC s) s = (Okay_ans (pre1, ins1, len1), s)
       -> fetch_instruction (PC s +32_p len1) s' = (Okay_ans (pre2, ins2, len2), s')
-      -> nacljmp_mask_instr pre1 ins1 pre2 ins2 = true 
+      -> reinsjmp_nonIAT_mask_instr pre1 ins1 pre2 ins2 = true 
       -> safeState s inv
       -> s ==> s'
       -> s'==> s''
       -> aligned (PC s'').
+  Proof. Admitted.
+(* TODO PROOF - Almost there, Allllmmmooooooossssstttttt tttthhhhheeeerrrrrreeeeeee....
   Proof. intros.
-    dupHyp H1; unfold nacljmp_mask_instr in H1.
+    dupHyp H1; unfold reinsjmp_nonIAT_mask_instr in H1.
     dupHyp H2; safestate_unfold_tac.  simplHyp.
     destruct ins1; bool_elim_tac; try congruence.
     destruct w; try congruence.
@@ -3368,15 +3421,15 @@ Section VERIFIER_CORR.
       repeat (destruct_head in H1; try congruence).
       unfold runConv in H3. simpl in H3.
       remember_destruct_head in H3 as ca.
-      eapply nacljmp_mask_reg_aligned; try eassumption.
+      eapply reinsjmp_mask_reg_aligned; try eassumption.
         destruct (zeq (signed i) (signed safeMask)). congruence.
           discriminate H12.
     assert (H20: PC s' = PC s +32_p len1).
-      eapply nacljmp_mask_PC. 
+      eapply reinsjmp_mask_PC. 
         eapply H. eassumption. eassumption. eassumption.
     rewrite <- H20 in *.
     assert (non_cflow_instr pre1 (AND true (Reg_op r) (Imm_op i)) = true).
-      eapply nacljmp_first_non_cflow_instr; eassumption.
+      eapply reinsjmp_first_non_cflow_instr; eassumption.
     assert (H22: checkSegments s' = true).
       eapply nci_checkSegments_inv. eapply H. assumption.
         eassumption. assumption.
@@ -3409,19 +3462,19 @@ Section VERIFIER_CORR.
         eapply conv_JMP_absolute_reg_step_PC.
           eassumption. congruence. assumption. assumption. 
       rewrite H30. assumption.
-  Qed.
+  Qed. *)
 
-  Lemma nacljmp_safeInSomeK : forall s code pre1 ins1 len1 pre2 ins2 len2,
+  Lemma reinsjmp_safeInSomeK : forall s code pre1 ins1 len1 pre2 ins2 len2,
     fetch_instruction (PC s) s = (Okay_ans (pre1, ins1, len1), s)
       -> fetch_instruction (PC s +32_p len1) s = (Okay_ans (pre2, ins2, len2), s)
-      -> nacljmp_mask_instr pre1 ins1 pre2 ins2 = true 
+      -> reinsjmp_nonIAT_mask_instr pre1 ins1 pre2 ins2 = true 
       -> safeState s code
       -> safeInSomeK s code.
   Proof. unfold safeInSomeK. intros. 
     dupHyp H2. safestate_unfold_tac.
     exists 2%nat.
     assert (non_cflow_instr pre1 ins1 = true).
-      eapply nacljmp_first_non_cflow_instr; eassumption.
+      eapply reinsjmp_first_non_cflow_instr; eassumption.
     unfold safeInK.
       split. unfold safeState in H2. prover.
       split. eapply nci_nextStepNoFail. eapply H. assumption. assumption.
@@ -3433,7 +3486,7 @@ Section VERIFIER_CORR.
           eapply nci_step_eqCodeRegion. 
             eapply H. assumption. eassumption. assumption.
         assert (PC s' = PC s +32_p len1).
-          eapply nacljmp_mask_PC. 
+          eapply reinsjmp_mask_PC. 
             eapply H. eassumption. eassumption. assumption.
         assert (fetch_instruction (PC s') s' = (Okay_ans (pre2, ins2, len2), s')).
           rewrite H13.
@@ -3446,16 +3499,16 @@ Section VERIFIER_CORR.
         split. 
           eapply nci_appropState. eapply H. assumption. assumption. assumption.
         split.
-          eapply nacljmp_snd_nextStepNoFail; eassumption.
+          eapply reinsjmp_snd_nextStepNoFail; eassumption.
           intro s''. intros. left.
-            use_lemma nacljmp_snd_step_same_seg_regs by eassumption.
+            use_lemma reinsjmp_snd_step_same_seg_regs by eassumption.
             assert (H20: CLimit s = CLimit s'').
               unfold Same_Seg_Regs_Rel.brel in *.
               simplHyp. prover.
             assert (eqCodeRegion s' s'').
               eapply eqCodeRegion_intro; try eassumption.
               right; left. 
-                eapply nacljmp_snd_step_aoss; eassumption.
+                eapply reinsjmp_snd_step_aoss; eassumption.
             use_lemma codeLoaded_inv by eassumption.
             use_lemma checkSegments_inv by eassumption.
             assert (appropState s'' ((sregs_st, sregs_lm), code)).
@@ -3464,7 +3517,7 @@ Section VERIFIER_CORR.
             split. assumption.
             split. trivial.
               assert (aligned (PC s'')).
-                eapply nacljmp_step_safePC. eapply H. 
+                eapply reinsjmp_step_safePC. eapply H. 
                   rewrite <- H13. eapply H14.
                   assumption. eassumption. assumption. assumption.
               unfold inBoundCodeAddr.
@@ -3489,6 +3542,8 @@ Section VERIFIER_CORR.
 
   Lemma eqMemBuffer_succ : forall b buffer s lc,
     eqMemBuffer (b::buffer) s lc -> eqMemBuffer buffer s (lc +32_z 1).
+  Proof. Admitted.
+(* TODO PROOF
   Proof. unfold eqMemBuffer. intros.
     simplHyp.
     rewrite length_cons in H.
@@ -3504,17 +3559,19 @@ Section VERIFIER_CORR.
         cut (Z_of_nat (S i) = 1 + Z_of_nat i).  prover.
         nat_to_Z_tac. omega.
       prover.
-  Qed.
+  Qed. *)
 
   Lemma simple_parse_aux_corr_parse_instr_aux : 
    forall bytes ps pre ins len bytes1 s lc k consumed_len,
     simple_parse' ps bytes = Some ((pre,ins), bytes1)
       -> len = (length bytes - length bytes1)%nat
-      -> eqMemBuffer (firstn len bytes) s lc
+      -> eqMemBuffer (l2ll (firstn len bytes)) s lc
       -> (k >= len)%nat
       -> exists pos,
            parse_instr_aux k lc consumed_len ps s = (Okay_ans (pre, ins, pos), s) /\
            Zpos pos + 1 = Zpos consumed_len + Z_of_nat len.
+  Proof. Admitted.
+(* TODO PROOF - Get's stuck on an H, will look at it later, BTW, Kung Fu Panda is a good movie.
   Proof. induction bytes as [ | b bytes']; intros.
     Case "nil". prover.
     Case "bytes = b::bytes'".
@@ -3565,13 +3622,13 @@ Section VERIFIER_CORR.
           assert (len = 0)%nat.
             rewrite length_cons in H0.  omega.
           rewrite H. nat_to_Z_tac. omega.
-  Qed.
+  Qed. *)
 
   Lemma simple_parse_corr_parse_instr : 
    forall bytes pre ins len bytes1 s pc,
     simple_parse bytes = Some ((pre,ins), bytes1)
       -> len = (length bytes - length bytes1)%nat
-      -> eqMemBuffer (firstn len bytes) s (CStart s +32 pc)
+      -> eqMemBuffer (l2ll (firstn len bytes)) s (CStart s +32 pc)
       -> (15 >= len)%nat
       -> exists pos,
            parse_instr pc s = (Okay_ans (pre, ins, pos), s) /\
@@ -3587,6 +3644,8 @@ Section VERIFIER_CORR.
 
   Lemma eqMemBuffer_skipn : forall n ls s lc,
     eqMemBuffer ls s lc -> eqMemBuffer (skipn n ls) s (lc +32_n n).
+  Proof. Admitted.
+(* TODO PROOF
   Proof. unfold eqMemBuffer. intros. simplHyp.
     split.
       eapply Zle_trans. eapply inj_le. eapply skipn_length_leq. assumption.
@@ -3606,10 +3665,12 @@ Section VERIFIER_CORR.
             unfold w32add. rewrite add_assoc. rewrite add_repr.
             rewrite inj_plus. rewrite Zplus_comm. trivial.
           prover.
-  Qed.
+  Qed. *)
 
   Lemma eqMemBuffer_firstn : forall n ls s lc,
     eqMemBuffer ls s lc -> eqMemBuffer (firstn n ls) s lc.
+  Proof. Admitted.
+(* TODO PROOF
   Proof. unfold eqMemBuffer. intros. simplHyp.
     assert (length (firstn n ls) <= length ls)%nat.
       rewrite firstn_length. apply Min.le_min_r.
@@ -3620,31 +3681,31 @@ Section VERIFIER_CORR.
           eapply Min.le_min_l.
         rewrite nth_firstn by assumption.
         eapply H0.  omega.
-  Qed.
+  Qed. *)
 
   Lemma simple_parse_parseloop_same : forall bytes ps,
     simple_parse' ps bytes = parseloop ps bytes.
   Proof. induction bytes; prover. Qed.
 
   Lemma token2byte_inv_byte2token : forall b,
-    FastVerifier.token2byte (FastVerifier.byte2token b) = b.
-  Proof. unfold FastVerifier.token2byte, FastVerifier.byte2token. intros.
+    ReinsVerifier.token2byte (ReinsVerifier.byte2token b) = b.
+  Proof. unfold ReinsVerifier.token2byte, ReinsVerifier.byte2token. intros.
     rewrite inj_Zabs_nat. rewrite Zabs_eq. rewrite repr_unsigned. trivial.
     generalize (unsigned_range b). prover.
   Qed.
 
   Lemma list_map_token_byte : forall bytes,
-    List.map (fun x  => FastVerifier.token2byte (FastVerifier.byte2token x)) bytes
+    List.map (fun x  => ReinsVerifier.token2byte (ReinsVerifier.byte2token x)) bytes
       = bytes.
   Proof. induction bytes. prover.
     simpl. rewrite token2byte_inv_byte2token. prover.
   Qed.
 
-  (* todo: two defs of byte2token in FastVerifier.v and DFACorrectness.v;
+  (* todo: two defs of byte2token in ReinsVerifier.v and DFACorrectness.v;
      should remove one of them *)
   Lemma byte2token_same : forall l,
-    List.map byte2token l = List.map FastVerifier.byte2token l.
-  Proof. unfold byte2token, FastVerifier.byte2token. 
+    List.map byte2token l = List.map ReinsVerifier.byte2token l.
+  Proof. unfold byte2token, ReinsVerifier.byte2token. 
     induction l; prover.
   Qed.
  
@@ -3660,7 +3721,7 @@ Section VERIFIER_CORR.
       -> simple_parse bytes = Some (pre, ins, rem)
       -> len = (length bytes - length rem)%nat
       -> includeAllJmpTargets pc len (List.map byte2token bytes) jmpTargets
-      -> checkJmpTargets jmpTargets startAddrs = true
+      -> checkJmpTargets jmpTargets = true
       -> goodJmp ins (pc +32_n len) startAddrs = true.
   Proof. intros.
     assert (firstn len bytes = firstn len (firstn len bytes)).
@@ -3755,12 +3816,12 @@ Section VERIFIER_CORR.
     abstract_build_dfa 256 nat2bools 400 (par2rec (alts dir_cflow))
       = Some dir_cflow_dfa.
 
-  Hypothesis nacljmp_dfa_built: 
-    abstract_build_dfa 256 nat2bools 400 (par2rec (alts nacljmp_mask))
-      = Some nacljmp_dfa.
+  Hypothesis reinsjmp_dfa_built: 
+    abstract_build_dfa 256 nat2bools 400 (par2rec (alts reinsjmp_mask))
+      = Some reinsjmp_dfa.
 
   Ltac clean := 
-    clear non_cflow_dfa_built; clear dir_cflow_dfa_built; clear nacljmp_dfa_built.
+    clear non_cflow_dfa_built; clear dir_cflow_dfa_built; clear reinsjmp_dfa_built.
 
   (* The three cases when the current state is a safe state *)
   (* The proof theorem needs the interface lemmas from the parser;
@@ -3784,8 +3845,8 @@ Section VERIFIER_CORR.
           exists pre2, exists ins2, exists len2,
           fetch_instruction (PC s) s = (Okay_ans (pre1, ins1, len1), s) /\
           fetch_instruction (PC s +32_p len1) s = (Okay_ans (pre2, ins2, len2), s) /\
-          nacljmp_mask_instr pre1 ins1 pre2 ins2 = true).
-  Proof. unfold checkProgram, FastVerifier.checkProgram; intros.
+          reinsjmp_nonIAT_mask_instr pre1 ins1 pre2 ins2 = true).
+  Proof. unfold checkProgram, ReinsVerifier.checkProgram; intros.
     remember_destruct_head in H0 as pb; try discriminate.
     destruct p as [startAddrs' checkAddrs].
     assert (startAddrs = startAddrs') by congruence.
@@ -3859,14 +3920,14 @@ Section VERIFIER_CORR.
         subst tokens.
         rewrite H42.
         eapply goodJmp_lemma; eassumption.
-    Case "nacljmp_dfa matches". right; right.
+    Case "reinsjmp_dfa matches". right; right.
       simplHyp.
-      use_lemma NACLjmp.nacljmp_dfa_corr by (subst tokens; eassumption).
+      use_lemma REINSjmp.reinsjmp_dfa_corr by (subst tokens; eassumption).
       destruct H8 as 
         [bytes1 [pre1 [ins1 [bytes [pre2 [ins2 [H30 [H32 [H34 [H36 H38]]]]]]]]]].
       rewrite app_length in H36.
       assert (len <= 15)%nat.
-        eapply nacljmp_mask_dfa_length. eassumption.
+        eapply reinsjmp_mask_dfa_length. eassumption.
           subst tokens. eassumption.
       assert (length bytes1 = 
                 (length code' - length (bytes ++ List.map nat_to_byte remaining)))%nat.
@@ -4064,9 +4125,9 @@ Section VERIFIER_CORR.
       SCase "Next: dir_cflow_instr".
         destruct H7 as [pre [ins [len [H20 [H22 [H24 H26]]]]]].
           eapply dci_safeInSomeK; try eassumption. prover.
-      SCase "Next: nacljmp".
+      SCase "Next: reinsjmp".
         destruct H7 as [pre1 [ins1 [len1 [pre2 [ins2 [len2 [H20 [H22 H24]]]]]]]].
-            eapply nacljmp_safeInSomeK. eapply H20. eapply H22. eassumption.
+            eapply reinsjmp_safeInSomeK. eapply H20. eapply H22. eassumption.
               assumption.
     Case "pc is out of bound".
       apply pc_out_bound_safeInSomeK. assumption. assumption.
