@@ -1,13 +1,13 @@
-(* Copyright (c) 2011. Greg Morrisett, Gang Tan, Joseph Tassarotti, 
-   Jean-Baptiste Tristan, and Edward Gan.
-
-   This file is part of RockSalt.
-
-   This file is free software; you can redistribute it and/or
-   modify it under the terms of the GNU General Public License as
-   published by the Free Software Foundation; either version 2 of
-   the License, or (at your option) any later version.
-*)
+(** Copyright (c) 2011. Greg Morrisett, Gang Tan, Joseph Tassarotti, 
+ *  Jean-Baptiste Tristan, and Edward Gan.
+ *
+ *  This file is part of RockSalt.
+ *
+ *  This file is free software; you can redistribute it and/or
+ *  modify it under the terms of the GNU General Public License as
+ *  published by the Free Software Foundation; either version 2 of
+ *  the License, or (at your option) any later version.
+ *)
 
 
 (** X86Lemmas.v. This file holds lemmas about X86 instructions *)
@@ -762,7 +762,7 @@ Qed.
 
 Hint Resolve set_loc_same_pc : same_pc_db.
 
-(** * Lemmas about when a machine computation preserves the memory *)
+(** Lemmas about when a machine computation preserves the memory *)
 Module Same_Mem_Rel <: RTL_STATE_REL.
   Definition brel (s1 s2 : rtl_state) := rtl_memory s1 = rtl_memory s2.
 
@@ -2352,7 +2352,6 @@ Proof. intros. prove_instr. Qed.
 Lemma nci_same_seg_regs: forall ins pre,
   non_cflow_instr pre ins = true
     -> same_seg_regs (RTL_step_list (instr_to_rtl pre ins)).
-(* Admitted. *)
 Proof. intros. 
   destruct ins; 
   unfold instr_to_rtl, check_prefix in *;
@@ -2595,7 +2594,6 @@ Lemma nci_aos :forall ins pre,
         agree_outside_seg SS (RTL_step_list (instr_to_rtl pre ins)) \/
         agree_outside_seg GS (RTL_step_list (instr_to_rtl pre ins)) \/
         agree_outside_seg ES (RTL_step_list (instr_to_rtl pre ins))).
-(* Admitted. *)
 Proof. intros.
   destruct ins; 
   unfold instr_to_rtl, check_prefix in *; simpl in H; bool_elim_tac;
@@ -2692,7 +2690,6 @@ Qed.
 Lemma nci_same_pc: forall ins pre,
   non_cflow_instr pre ins = true
     -> same_pc (RTL_step_list (instr_to_rtl pre ins)).
-(* Admitted. *)
 Proof. intros.
   destruct ins; 
   unfold instr_to_rtl, check_prefix in *;
@@ -2794,7 +2791,6 @@ Hint Resolve check_prefix_no_fail_1 check_prefix_no_fail_2
 Lemma nci_no_fail : forall ins pre,
   non_cflow_instr pre ins = true
     -> no_fail (RTL_step_list (instr_to_rtl pre ins)).
-(* Admitted. *)
 Proof. intros. 
   destruct ins; 
   simpl in H; bool_elim_tac;

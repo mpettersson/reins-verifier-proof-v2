@@ -14,8 +14,8 @@
 (* *********************************************************************)
 
 (** This file collects a number of definitions and theorems that are
-    used throughout the development.  It complements the Coq standard
-    library. *)
+ *  used throughout the development.  It complements the Coq standard
+ *  library. *)
 
 Require Export ZArith.
 Require Export Znumtheory.
@@ -23,12 +23,12 @@ Require Export List.
 Require Export Bool.
 Require Import Wf_nat.
 
-(** * Logical axioms *)
+(** Logical axioms *)
 
 (** We use two logical axioms that are not provable in Coq but consistent
-  with the logic: function extensionality and proof irrelevance.
-  These are used in the memory model to show that two memory states
-  that have identical contents are equal. *)
+ *  with the logic: function extensionality and proof irrelevance.
+ *  These are used in the memory model to show that two memory states
+ *  that have identical contents are equal. *)
 
 Axiom extensionality:
   forall (A B: Type) (f g : A -> B),
@@ -37,7 +37,7 @@ Axiom extensionality:
 Axiom proof_irrelevance:
   forall (P: Prop) (p1 p2: P), p1 = p2.
 
-(** * Useful tactics *)
+(** Useful tactics *)
 
 Ltac inv H := inversion H; clear H; subst.
 
@@ -103,7 +103,7 @@ Ltac exploit x :=
  || refine (modusponens _ _ (x _ _) _)
  || refine (modusponens _ _ (x _) _).
 
-(** * Definitions and theorems over the type [positive] *)
+(** Definitions and theorems over the type [positive] *)
 
 Definition peq (x y: positive): {x = y} + {x <> y}.
 Proof.
@@ -284,7 +284,7 @@ Qed.
 
 End POSITIVE_ITERATION.
 
-(** * Definitions and theorems over the type [Z] *)
+(** Definitions and theorems over the type [Z] *)
 
 Definition zeq: forall (x y: Z), {x = y} + {x <> y} := Z_eq_dec.
 
@@ -539,7 +539,7 @@ Proof.
 Qed.
 
 (** Alignment: [align n amount] returns the smallest multiple of [amount]
-  greater than or equal to [n]. *)
+ *  greater than or equal to [n]. *)
 
 Definition align (n: Z) (amount: Z) :=
   ((n + amount - 1) / amount) * amount.
@@ -559,7 +559,7 @@ Proof.
   intros. unfold align. apply Zdivide_factor_l. 
 Qed.
 
-(** * Definitions and theorems on the data types [option], [sum] and [list] *)
+(** Definitions and theorems on the data types [option], [sum] and [list] *)
 
 Set Implicit Arguments.
 
@@ -748,7 +748,7 @@ Proof. intros. generalize k1 ls. clear k1 ls.
 Qed.
 
 (** [list_disjoint l1 l2] holds iff [l1] and [l2] have no elements 
-  in common. *)
+ *  in common. *)
 
 Definition list_disjoint (A: Type) (l1 l2: list A) : Prop :=
   forall (x y: A), In x l1 -> In y l2 -> x <> y.
@@ -804,7 +804,7 @@ Definition list_equiv (A : Type) (l1 l2: list A) : Prop :=
   forall x, In x l1 <-> In x l2.
 
 (** [list_norepet l] holds iff the list [l] contains no repetitions,
-  i.e. no element occurs twice. *)
+ *  i.e. no element occurs twice. *)
 
 Inductive list_norepet (A: Type) : list A -> Prop :=
   | list_norepet_nil:
@@ -942,7 +942,7 @@ Proof.
 Qed.
 
 (** [list_forall2 P [x1 ... xN] [y1 ... yM] holds iff [N = M] and
-  [P xi yi] holds for all [i]. *)
+ *  [P xi yi] holds for all [i]. *)
 
 Section FORALL2.
 
@@ -1019,7 +1019,7 @@ Proof.
   intros; destruct l. reflexivity. destruct l; reflexivity.
 Qed.
 
-(** * Definitions and theorems over boolean types *)
+(** Definitions and theorems over boolean types *)
 
 Definition proj_sumbool (P Q: Prop) (a: {P} + {Q}) : bool :=
   if a then true else false.

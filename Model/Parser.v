@@ -1,17 +1,17 @@
-(* Copyright (c) 2011. Greg Morrisett, Gang Tan, Joseph Tassarotti, 
-   Jean-Baptiste Tristan, and Edward Gan.
+(** Copyright (c) 2011. Greg Morrisett, Gang Tan, Joseph Tassarotti, 
+ *  Jean-Baptiste Tristan, and Edward Gan.
+ *
+ *  This file is part of RockSalt.
+ *
+ *  This file is free software; you can redistribute it and/or
+ *  modify it under the terms of the GNU General Public License as
+ *  published by the Free Software Foundation; either version 2 of
+ *  the License, or (at your option) any later version.
+ *)
 
-   This file is part of RockSalt.
-
-   This file is free software; you can redistribute it and/or
-   modify it under the terms of the GNU General Public License as
-   published by the Free Software Foundation; either version 2 of
-   the License, or (at your option) any later version.
-*)
-
-(** * Regular expression matcher based on derivatives, inspired by the paper
-      of Owens, Reppy, and Turon.
-*) 
+(** Regular expression matcher based on derivatives, inspired by the paper
+ *  of Owens, Reppy, and Turon.
+ *) 
 Require Import Coq.Program.Equality.
 Require Import Coq.Init.Logic.
 Require Import List.
@@ -22,7 +22,7 @@ Unset Automatic Introduction.
 Set Implicit Arguments.
 Axiom proof_irrelevance : forall (P:Prop) (H1 H2:P), H1 = H2.
 
-(** ** Argument to the module that builds the parser *)
+(** Argument to the module that builds the parser *)
 Module Type PARSER_ARG.
   (** We parameterize the development over a set of characters *)
   Parameter char_p : Set.
@@ -35,13 +35,13 @@ Module Type PARSER_ARG.
   Parameter tipe_m : tipe -> Set.
 End PARSER_ARG.
 
-(** ** The Parser functor *)
+(** The Parser functor *)
 Module Parser(PA : PARSER_ARG).
   Import PA.
 
   (** An inductively generated set of names for the types of results
-      returned by the parser.  We need at least unit, char, pairs, and
-      lists, as well as user-defined types (tipe). *)
+   *  returned by the parser.  We need at least unit, char, pairs, and
+   *  lists, as well as user-defined types (tipe). *)
   Inductive result : Set := 
   | unit_t : result
   | char_t : result
@@ -66,10 +66,10 @@ Module Parser(PA : PARSER_ARG).
        | tipe_t t => tipe_m t
      end)%type.
 
-  (** ** Constructors for regular expression parsers. *)
+  (** Constructors for regular expression parsers. *)
   (** The parsers are indexed by the return type as a [result], and we've
-      added a new kind of parser [Map_p] which is used to transform the
-      result of one parser to another. *)
+   *  added a new kind of parser [Map_p] which is used to transform the
+   *  result of one parser to another. *)
   Inductive parser : result -> Set := 
   | Any_p : parser char_t
   | Char_p : char_p -> parser char_t
@@ -80,7 +80,7 @@ Module Parser(PA : PARSER_ARG).
   | Star_p : forall t, parser t -> parser (list_t t)
   | Map_p : forall t1 t2, ((result_m t1) -> (result_m t2)) -> parser t1 -> parser t2.
 
-  (** ** Denotational semantics for parsers *)
+  (** Denotational semantics for parsers *)
   (** The semantics relates input strings (as lists of characters) to result values. *)
   Inductive in_parser : forall t, parser t -> list char_p -> (result_m t) -> Prop := 
   | Any_pi : forall c cs v, cs = c::nil -> v = c -> in_parser Any_p cs v
@@ -102,39 +102,39 @@ Module Parser(PA : PARSER_ARG).
   | Map_pi : forall t1 t2 (f:result_m t1 -> result_m t2) (p:parser t1) cs v v1, 
     in_parser p cs v1 -> v = f v1 -> in_parser (Map_p _ f p) cs v.
   (** Note that for [Star_cat_pi] we require [cs1] to be non-empty -- this is 
-     crucial for ensuring that any regular expression matches a string and 
-     returns a finite list of associated values. Otherwise, something like
-     [Star Eps] would take the empty string to an infinite set of possible 
-     values. *)
+   *  crucial for ensuring that any regular expression matches a string and 
+   *  returns a finite list of associated values. Otherwise, something like
+   *  [Star Eps] would take the empty string to an infinite set of possible 
+   *  values. *)
 
-  (** ** Internal Representation of Parsers: [regexp]s *)
+  (** Internal Representation of Parsers: [regexp]s *)
   (** Internally, we translate parsers to a representation called [regexp] 
-     where all of the functions are replaced with a function name that we can 
-     look up in an environment.  This will allow us to put together a decidable 
-     equality on regular expressions, which will in turn, allow us to hash-cons 
-     them (though we don't take advantage of this yet.) *)
+   *  where all of the functions are replaced with a function name that we can 
+   *  look up in an environment.  This will allow us to put together a decidable 
+   *  equality on regular expressions, which will in turn, allow us to hash-cons 
+   *  them (though we don't take advantage of this yet.) *)
 
   (** We'll represent function names as positions in an environment list. *)
   Definition fn_name := nat.
   Definition fn_name_eq := eq_nat_dec. 
 
   (** In addition to user-level functions, we need a few built-in functions that 
-     are used during optimization.
-  *)
+   *  are used during optimization.
+   *)
   Inductive fn : result -> result -> Set := 
   | Fn_name : forall (f:fn_name) t1 t2, fn t1 t2
-  | Fn_const_char : forall (c:char_p), fn unit_t char_t  (* \x:unit.c *)
-  | Fn_empty_list : forall t, fn unit_t (list_t t)     (* \x:unit.@nil t *)
+  | Fn_const_char : forall (c:char_p), fn unit_t char_t     (* \x:unit.c *)
+  | Fn_empty_list : forall t, fn unit_t (list_t t)          (* \x:unit.@nil t *)
   | Fn_cons : forall t, fn (pair_t t (list_t t)) (list_t t) (* \x:(t*list t).(fst x)::(snd x) *)
-  | Fn_unit_left : forall t, fn t (pair_t unit_t t) (* \x:t.(tt,x) *)
-  | Fn_unit_right : forall t, fn t (pair_t t unit_t) (* \x:t.(x,tt) *)
-  | Fn_unit : forall t, fn t unit_t (* \x:t.tt *)
+  | Fn_unit_left : forall t, fn t (pair_t unit_t t)         (* \x:t.(tt,x) *)
+  | Fn_unit_right : forall t, fn t (pair_t t unit_t)        (* \x:t.(x,tt) *)
+  | Fn_unit : forall t, fn t unit_t                         (* \x:t.tt *)
   .
 
   (** Finally, a [regexp] is just like a [parser] except that the [Map] constructor
-     takes a [fn] instead of an actual function. Note that this syntax doesn't preclude 
-     us from using a function name with the wrong type -- we'll capture this constraint
-     later on. *)
+   *  takes a [fn] instead of an actual function. Note that this syntax doesn't preclude 
+   *  us from using a function name with the wrong type -- we'll capture this constraint
+   *  later on. *)
   Inductive regexp : result -> Set :=
   | Any  : regexp char_t
   | Char : char_p -> regexp char_t
@@ -168,8 +168,8 @@ Module Parser(PA : PARSER_ARG).
   Ltac s := repeat (mysimp ; subst).
 
   (** Now we can try to define a syntactic equality checker on regexps.  We'll
-      begin by writing some simple functions that calculate booleans to avoid
-      some hair with dependencies.  *)
+   *  begin by writing some simple functions that calculate booleans to avoid
+   *  some hair with dependencies.  *)
   Definition s2b (P Q:Prop) (x:{P}+{Q}) : bool := 
     match x with 
       | left _ => true
@@ -253,11 +253,11 @@ Module Parser(PA : PARSER_ARG).
       | false => fun H => right _ I
     end (eq_refl _).
 
-  (** ** Environments for function names *)
+  (** Environments for function names *)
 
   (** Function contexts map function names to a dependent pair consisting of
-      - a pair of [result]s [(t1,t2)]
-      - a function of type [result_m t1 -> result_m t2]. *)
+   *   - a pair of [result]s [(t1,t2)]
+   *   - a function of type [result_m t1 -> result_m t2]. *)
   Definition fn_result_m(p:result*result) := result_m (fst p) -> result_m (snd p).
   Definition ctxt_t := list (sigT fn_result_m).
   Definition fn_result'(G:ctxt_t)(n:fn_name) : option (result*result)%type := 
@@ -272,7 +272,7 @@ Module Parser(PA : PARSER_ARG).
     match p with | None => void | Some p => fn_result_m p end.
 
   (** This looks up a function in the environment, given a proof that 
-      the function name is in bounds. *)
+   *  the function name is in bounds. *)
   Fixpoint lookup_fn'(n:fn_name) :
     forall (G:ctxt_t), n < length G -> fn_result_m_opt (fn_result' G n) := 
     match n return forall G, n < length G -> fn_result_m_opt (fn_result' G n) with 
@@ -299,7 +299,7 @@ Module Parser(PA : PARSER_ARG).
   Definition lookup_fn(n:fn_name)(H:n < length fn_ctxt) := lookup_fn' fn_ctxt H.
                 
   (** A function is well-formed if all of the function names have the right
-      types when we look them up in the [fn_ctxt]. *)
+   *  types when we look them up in the [fn_ctxt]. *)
   Definition wf_fn t u (f:fn t u) : Prop := 
     match f in fn u' v' with 
       | Fn_name f t1 t2 => f < length fn_ctxt /\ fn_result f = Some (t1,t2)
@@ -307,8 +307,8 @@ Module Parser(PA : PARSER_ARG).
     end.
   
   (** A predicate for determining if a [regexp] is type-consistent with
-     the given [fn_ctxt].  Note that by construction, the only things that
-     can be ill-typed are the embedded [fn]s in a [Map]. *)
+   *  the given [fn_ctxt].  Note that by construction, the only things that
+   *  can be ill-typed are the embedded [fn]s in a [Map]. *)
   Fixpoint wf_regexp t (r:regexp t) : Prop := 
     match r in regexp t' with
       | Any => True
@@ -336,7 +336,7 @@ Module Parser(PA : PARSER_ARG).
     generalize (@lookup_fn f0 H). rewrite H0. auto.
   Defined.
 
-  (** ** Denotational Semantics for [regexp] *)  
+  (** Denotational Semantics for [regexp] *)  
   (** Now we can give a semantic interpretation to the regexps under a given context. *)
   Inductive in_regexp : forall t, regexp t -> list char_p -> (result_m t) -> Prop := 
   | Any_i : forall c cs v, cs = c::nil -> v = c -> in_regexp Any cs v
@@ -384,9 +384,9 @@ Module Parser(PA : PARSER_ARG).
   Qed.
 
   (** We define some explicit inversion principles for the [regexp] constructors
-      so that we can invert them even when the arguments aren't variables.  If
-      we tried to use inversion otherwise, then Coq will choke because of the
-      dependencies. *)
+   *  so that we can invert them even when the arguments aren't variables.  If
+   *  we tried to use inversion otherwise, then Coq will choke because of the
+   *  dependencies. *)
 
   (** An inversion principle for [Eps]. *)
   Lemma EpsInv : forall cs v, in_regexp Eps cs v -> cs = nil /\ v = tt.
@@ -480,8 +480,8 @@ Module Parser(PA : PARSER_ARG).
   Qed.
 
   (** In the simple matcher code, we could fuse OptCat and OptCat_r into
-      a single definition.  Here, we broke it out to make the dependency
-      a little simpler to reason about. *)
+   *  a single definition.  Here, we broke it out to make the dependency
+   *  a little simpler to reason about. *)
 
   (** Used in an optimizing constructor for [Cat]. *)
   Definition OptCat_r t1 t2 (r2:regexp t2) (r1:regexp t1) := 
@@ -562,10 +562,10 @@ Module Parser(PA : PARSER_ARG).
 
   (** Optimizing version of [Map]. *)
 
-  (* This is currently only used in the DFA construction as it's
-     recursively pushing the maps in.  The goal is to ignore the
-     semantic actions and always return unit if we ever return a
-     value. *)
+  (** This is currently only used in the DFA construction as it's
+   *  recursively pushing the maps in.  The goal is to ignore the
+   *  semantic actions and always return unit if we ever return a
+   *  value. *)
   Fixpoint MapUnit t (r:regexp t) : regexp unit_t := 
     match r with 
       | Any => Map (Fn_unit _) Any
@@ -617,8 +617,8 @@ Module Parser(PA : PARSER_ARG).
   Defined.
 
   (** If [(cs,v)] is in [Star r] then there exists some [n] such that
-      [(cs,v)] is in the nth unwinding of [r].  
-      This gives us an easy inner induction. *)
+   *  [(cs,v)] is in the nth unwinding of [r].  
+   *  This gives us an easy inner induction. *)
   Lemma star_rep : forall t (r:regexp t) cs (v:result_m t), 
     in_regexp r cs v -> 
     forall t1 (r1 : regexp t1) (H: t = list_t t1), 
@@ -770,13 +770,14 @@ Module Parser(PA : PARSER_ARG).
   Qed.
 
  (** Now we define what it means for a function to be a valid
-     parser.  A function [f: regexp t -> list char_p -> list (result_m t)], is a
-     valid parser if, when given a [regexp] and a string of characters [s], it
-     returns a list of values [[v1,...,vn]], such that { (s,vi) } is the 
-     relation denoted by the regular expression. *)
+  *  parser.  A function [f: regexp t -> list char_p -> list (result_m t)], is a
+  *  valid parser if, when given a [regexp] and a string of characters [s], it
+  *  returns a list of values [[v1,...,vn]], such that { (s,vi) } is the 
+  *  relation denoted by the regular expression. *)
   Definition is_parser (f: forall t (r:regexp t), wf_regexp r -> list char_p -> list (result_m t)) : Prop :=
     forall t (r: regexp t) (H:wf_regexp r) (cs: list char_p) (v:result_m t), 
       ([[r]] cs v -> In v (f t r H cs)) /\ (In v (f t r H cs) -> [[r]] cs v).
+
   (** -----------------------------------------------------*)
   (** ** Now we define the actual derivative-based parser. *)
   (** -----------------------------------------------------*)
@@ -808,7 +809,7 @@ Module Parser(PA : PARSER_ARG).
   Hint Resolve OptCatDelayed_corr.
 
   (** This is the heart of the algorithm.  It returns a regexp denoting 
-      { (cs,v) | (c::cs,v) in r }.  *)
+   *  { (cs,v) | (c::cs,v) in r }.  *)
   Fixpoint deriv t (r:regexp t) (c:char_p) : regexp t := 
     match r in regexp t' return regexp t' with 
       | Any => OptMap (Fn_const_char c) Eps 
@@ -822,8 +823,8 @@ Module Parser(PA : PARSER_ARG).
     end.
 
   (** A specialized derivative for the case where we want to ignore the
-      semantic actions -- note, we probably want to use this instead 
-      of [null] above, because of the issue with [Star]. *)
+   *  semantic actions -- note, we probably want to use this instead 
+   *  of [null] above, because of the issue with [Star]. *)
   Fixpoint accepts_null t (r:regexp t) : bool := 
     match r with 
       | Any => false
@@ -865,9 +866,9 @@ Module Parser(PA : PARSER_ARG).
     end.
 
   (** When we are done parsing using a [regexp] r, we are left with a [regexp] denoting 
-     { (null,v) | exists s.(s,v) in r }.  This function computes all of the 
-     values [v] in this set.  To do so, it needs to be well-formed with respect to the
-     context. *)
+   *  { (null,v) | exists s.(s,v) in r }.  This function computes all of the 
+   *  values [v] in this set.  To do so, it needs to be well-formed with respect to the
+   *  context. *)
   Definition apply_null t (r:regexp t) : wf_regexp r -> list (result_m t).
     refine (
       fix apply_null t (r:regexp t) : wf_regexp r -> list (result_m t) := 
@@ -1132,23 +1133,24 @@ Module Parser(PA : PARSER_ARG).
     unfold is_parser ; mysimp ; [apply DerivParse2 | eapply DerivParse1] ; eauto.
   Qed.
 
-  (** * DFA Construction *)
+  (** DFA Construction *)
+  
   Section TABLE.
     (** In this section, we build a table-driven DFA recognizer for a [regexp].  It's
-        crucial that the regexp has been built using [par2rec] to ensure that all of
-        the semantic actions get mapped to return [tt].  What we return is:
-        - A list of states which are really derivatives of the original regexp.
-          The position of the regexp determins an identity (i.e., index) for the 
-          state.  The initial regexp is always at position 0.  
-        - A transition table as a list of list of nats.  If [T(i,j) = k], then 
-          this says that in state [i], if we see an input list of characters 
-          corresponding to the [token_id] [j], then we can transition to state [k].
-          Obviously, [i] and [k] should be indexes of regular expressions in the
-          list of [states].  Furthermore, it should be that [states(k)] is the
-          derivative of [states(i)] with respect to the token_id [j].
-        - An accept table as a list of booleans.  [accept(i) = true] iff 
-          [states(i)] accepts the empty string.
-    *)
+     *  crucial that the regexp has been built using [par2rec] to ensure that all of
+     *  the semantic actions get mapped to return [tt].  What we return is:
+     *      - A list of states which are really derivatives of the original regexp.
+     *        The position of the regexp determins an identity (i.e., index) for the 
+     *        state.  The initial regexp is always at position 0.  
+     *      - A transition table as a list of list of nats.  If [T(i,j) = k], then 
+     *        this says that in state [i], if we see an input list of characters 
+     *        corresponding to the [token_id] [j], then we can transition to state [k].
+     *        Obviously, [i] and [k] should be indexes of regular expressions in the
+     *        list of [states].  Furthermore, it should be that [states(k)] is the
+     *        derivative of [states(i)] with respect to the token_id [j].
+     *      - An accept table as a list of booleans.  [accept(i) = true] iff 
+     *        [states(i)] accepts the empty string.
+     *)
     Record DFA := { 
       dfa_num_states : nat ; 
       dfa_states : list (regexp unit_t) ; 
@@ -1158,18 +1160,18 @@ Module Parser(PA : PARSER_ARG).
     }.
 
     (** Instead of working directly in terms of lists of [char_p]'s, we instead
-        work in terms of [token_id]'s where a [token_id] is just a [nat] in the
-        range 0..[num_tokens]-1.  We assume that each [token_id] can be mapped
-        to a list of [char_p]'s.  For example, in the x86 parser, our characters
-        are bits, but our tokens represent bytes in the range 0..255.  So the
-        [token_id_to_chars] function should extract the n bits correspond to the
-        byte value.  *)
+     *  work in terms of [token_id]'s where a [token_id] is just a [nat] in the
+     *  range 0..[num_tokens]-1.  We assume that each [token_id] can be mapped
+     *  to a list of [char_p]'s.  For example, in the x86 parser, our characters
+     *  are bits, but our tokens represent bytes in the range 0..255.  So the
+     *  [token_id_to_chars] function should extract the n bits correspond to the
+     *  byte value.  *)
     Definition token_id := nat.
     Variable num_tokens : nat.
     Variable token_id_to_chars : token_id -> list char_p.
 
     (** Our DFA states correspond to nth derivatives of a starting regexp.  We take
-        the position of a regexp in the [states] list to be its name. *)
+     *  the position of a regexp in the [states] list to be its name. *)
     Definition states := list (regexp unit_t).
     
     (** Find the index of a [regexp] in the list of [states]. *)
@@ -1189,7 +1191,7 @@ Module Parser(PA : PARSER_ARG).
       end.
 
     (** Generate the transition matrix row for the state corresponding to the
-        regexp [r].  In general, this will add new states. *)
+     *  regexp [r].  In general, this will add new states. *)
     Fixpoint gen_row' n (r:regexp unit_t) (s:states) token_id : (states * list nat) := 
       match n with 
         | 0 => (s, nil)
@@ -1202,20 +1204,20 @@ Module Parser(PA : PARSER_ARG).
       gen_row' num_tokens r s 0.
 
     (** Build a transition table by closing off the reachable states.  The invariant
-        is that we've closed the table up to the [next_state] and have generated the
-        appropriate transition rows for the states in the range 0..next_state-1.
-        So we first check to see if [next_state] is outside the range of states, and
-        if so, we are done.  Otherwise, we generate the transition row for the
-        derivative at the position [next_state], add it to the list of rows, and
-        then move on to the next position in the list of states.  Note that when 
-        we generate the transition row, we may end up adding new states.  
-
-        I believe it's too difficult to show that this process eventually terminates,
-        so we cheat and only run for [n] steps, returning [None] if we run out of
-        steps.  Actually, if the regexp has any occurrences of [Star] that aren't
-        wrapped by a [Map (Fn_unit _)] then this won't terminate in general.  But 
-        the [par2rec] translation should take care of this. And of course, for the
-        x86 parser, we never use [Star]. *)        
+     *  is that we've closed the table up to the [next_state] and have generated the
+     *  appropriate transition rows for the states in the range 0..next_state-1.
+     *  So we first check to see if [next_state] is outside the range of states, and
+     *  if so, we are done.  Otherwise, we generate the transition row for the
+     *  derivative at the position [next_state], add it to the list of rows, and
+     *  then move on to the next position in the list of states.  Note that when 
+     *  we generate the transition row, we may end up adding new states.  
+     *
+     *  I believe it's too difficult to show that this process eventually terminates,
+     *  so we cheat and only run for [n] steps, returning [None] if we run out of
+     *  steps.  Actually, if the regexp has any occurrences of [Star] that aren't
+     *  wrapped by a [Map (Fn_unit _)] then this won't terminate in general.  But 
+     *  the [par2rec] translation should take care of this. And of course, for the
+     *  x86 parser, we never use [Star]. *)        
     Fixpoint build_table' n (s:states) (rows:list (list nat)) (next_state:nat) : 
       option (states * list (list nat)) := 
       match n with 
@@ -1260,13 +1262,14 @@ Module Parser(PA : PARSER_ARG).
       end.
 
     Section DFA_RECOGNIZE.
+      
       Variable d : DFA.
       (** This loop is intended to find the shortest match (if any) for
-          a sequence of tokens, given a [DFA].  It returns [(Some (n,
-          ts'))] when there is a match and where [ts'] is the
-          unconsumed input and n is the length of the consumed input.
-          If there is no match, it returns [None].  This is just one
-          example of a recognizer that can be built with the DFA. *)
+       *  a sequence of tokens, given a [DFA].  It returns [(Some (n,
+       *  ts'))] when there is a match and where [ts'] is the
+       *  unconsumed input and n is the length of the consumed input.
+       *  If there is no match, it returns [None].  This is just one
+       *  example of a recognizer that can be built with the DFA. *)
 
       Fixpoint dfa_loop state (count: nat) (ts : list token_id) : 
         option (nat * list token_id) := 
@@ -1281,11 +1284,12 @@ Module Parser(PA : PARSER_ARG).
 
       Definition dfa_recognize (ts:list token_id) : option (nat * list token_id) := 
         dfa_loop 0 0 ts.
+    
     End DFA_RECOGNIZE.
 
 
     (** In what follows, we try to give some lemmas for reasoning about the
-        DFA constructed from a parser. *)
+     *  DFA constructed from a parser. *)
     Require Import Omega.
 
     Lemma nth_error_app : forall A (xs ys:list A), 
@@ -1331,8 +1335,8 @@ Module Parser(PA : PARSER_ARG).
         end.
 
     (** Calling [find_or_add_prop r s] yields a well-formed state, ensures that
-        if we lookup the returned index, we get [r], and that the state is only
-        extended. *)
+     *  if we lookup the returned index, we get [r], and that the state is only
+     *  extended. *)
     Lemma find_or_add_prop : forall r s, 
       wf_regexp r -> 
       wf_states s -> 
@@ -1397,12 +1401,12 @@ Module Parser(PA : PARSER_ARG).
     Qed.
 
     (** This is the main loop-invariant for [gen_row'].  Given a well-formed
-        regexp [r], a well-formed list of states [s], and a token number [n], 
-        running [gen_row' n r s (num_tokens - n)] yields a list of states [s2]
-        and transition-table [row2] such that [s2] is well-formed, the
-        length of [row2] is [n], [s2] is an extension of [s], and for all
-        [m], the [mth] element of [s2] is the [unit_derivs] of [r] with 
-        respect to the token [m+num_tokens-n]. *)
+     *  regexp [r], a well-formed list of states [s], and a token number [n], 
+     *  running [gen_row' n r s (num_tokens - n)] yields a list of states [s2]
+     *  and transition-table [row2] such that [s2] is well-formed, the
+     *  length of [row2] is [n], [s2] is an extension of [s], and for all
+     *  [m], the [mth] element of [s2] is the [unit_derivs] of [r] with 
+     *  respect to the token [m+num_tokens-n]. *)
     Lemma gen_row'_prop n r s : 
       wf_regexp r -> 
       wf_states s -> 
@@ -1441,9 +1445,9 @@ Module Parser(PA : PARSER_ARG).
    Qed.
 
    (** This is the main invariant for the [build_table] routine.  Given a well-formed
-       list of states [s] and a list of transition-table rows [ros], then for 
-       all [i < n], [s(i)] and [r(i)] are defined, and the row [r(i)] is well-formed
-       with respect to the state [s(i)]. *)
+    *  list of states [s] and a list of transition-table rows [ros], then for 
+    *  all [i < n], [s(i)] and [r(i)] are defined, and the row [r(i)] is well-formed
+    *  with respect to the state [s(i)]. *)
    Definition build_table_inv s rows n := 
      wf_states s /\ 
      forall i, i < n -> 
@@ -1482,7 +1486,7 @@ Module Parser(PA : PARSER_ARG).
    Qed.
 
    (** This lemma establishes that the [build_table'] loop maintains the
-       [build_table_inv] and only adds to the states and rows of the table. *)
+    *  [build_table_inv] and only adds to the states and rows of the table. *)
    Lemma build_table'_prop n s rows : 
      build_table_inv s rows (length rows) -> 
      match build_table' n s rows (length rows) with 
@@ -1538,11 +1542,11 @@ Module Parser(PA : PARSER_ARG).
   Qed.
 
   (** This predicate captures the notion of a correct [DFA] with respect to
-      an initial regexp [r].  In essence, it says that the lengths of all of
-      the lists is equal to [dfa_num_states d], that [r] is at [dfa_states(0)],
-      each row of the [dfa_transition] table is well-formed, that 
-      [accepts(i)] holds iff the corresponding state accepts the empty string,
-      and when [rejects(i)] is true, the corresponding state rejects all strings. *)
+   *  an initial regexp [r].  In essence, it says that the lengths of all of
+   *  the lists is equal to [dfa_num_states d], that [r] is at [dfa_states(0)],
+   *  each row of the [dfa_transition] table is well-formed, that 
+   *  [accepts(i)] holds iff the corresponding state accepts the empty string,
+   *  and when [rejects(i)] is true, the corresponding state rejects all strings. *)
   Definition wf_dfa (r:regexp unit_t) (d:DFA) := 
     let num_states := dfa_num_states d in
     let states := dfa_states d in 
@@ -1636,7 +1640,7 @@ Module Parser(PA : PARSER_ARG).
     Qed.
 
     (** [build_dfa] is (partially) correct.  Note that we do not show that there's
-        always an [n], hence the partiality. *)
+     *  always an [n], hence the partiality. *)
     Lemma build_dfa_wf (r:regexp unit_t) (d:DFA) :
       wf_regexp r -> forall n, build_dfa n r = Some d -> wf_dfa r d.
     Proof.
@@ -1677,7 +1681,7 @@ Module Parser(PA : PARSER_ARG).
       intros. omega.
    Qed.
 
-  (** ** Building a recognizer which ignores semantic actions. *)
+  (** Building a recognizer which ignores semantic actions. *)
   Fixpoint par2rec t (p:parser t) : regexp unit_t := 
     match p with
       | Any_p => Map (Fn_unit _) Any
@@ -1754,9 +1758,9 @@ Module Parser(PA : PARSER_ARG).
   Qed.
 
   (** A simple recognizer -- given a parser [p] and string [cs], returns a 
-     proof that either either [cs] matches the grammar in [p] (i.e., there is
-     some semantic value that [cs] would parse into) or else there is no 
-     match (i.e., there is no value that it can parse into.) *)
+   *  proof that either either [cs] matches the grammar in [p] (i.e., there is
+   *  some semantic value that [cs] would parse into) or else there is no 
+   *  match (i.e., there is no value that it can parse into.) *)
   Definition recognize t (p:parser t) cs : 
     {exists v, in_parser p cs v} + {forall v, ~ in_parser p cs v}.
     intros.
@@ -1773,8 +1777,8 @@ Module Parser(PA : PARSER_ARG).
      fold_right (fun v a => (f v) ++ a) nil xs.
 
    (** This is a simple function which runs a DFA on an entire string, returning
-       true if the DFA accepts the string, and false otherwise.  In what follows,
-       we prove that [run_dfa] is correct... *)
+    *  true if the DFA accepts the string, and false otherwise.  In what follows,
+    *  we prove that [run_dfa] is correct... *)
    Fixpoint run_dfa (d:DFA) (state:nat) (ts:list token_id) : bool := 
      match ts with 
        | nil => nth state (dfa_accepts d) false
@@ -1782,9 +1786,9 @@ Module Parser(PA : PARSER_ARG).
      end.
 
    (** A key part of the reasoning is showing that [unit_deriv] is correct.  But
-       this turns out to be complicated because of the type dependencies, as well
-       as the optimizations that we're doing.  So I've broken it up into a number
-       of smaller lemmas. *)
+    *  this turns out to be complicated because of the type dependencies, as well
+    *  as the optimizations that we're doing.  So I've broken it up into a number
+    *  of smaller lemmas. *)
    Lemma unit_deriv_cat0 : forall c t1 t2 (r1:regexp t1) (r2:regexp t2), 
      wf_regexp r1 -> wf_regexp r2 -> 
      accepts_null r1 = true -> 
@@ -1900,8 +1904,8 @@ Module Parser(PA : PARSER_ARG).
    Qed.
 
    (** So this is a crucial result:  it says that if [unit_deriv r c] returns a 
-       regexp that matches [cs] and [tt], then there is some [v] such that 
-       [r] matches [c::cs] and [v]. *)
+    *  regexp that matches [cs] and [tt], then there is some [v] such that 
+    *  [r] matches [c::cs] and [v]. *)
    Lemma unit_deriv_corr1 t (r:regexp t) c cs : 
      in_regexp (unit_deriv r c) cs tt -> wf_regexp r -> exists v, in_regexp r (c::cs) v.
    Proof.
@@ -1924,8 +1928,8 @@ Module Parser(PA : PARSER_ARG).
    Qed.
      
    (** This lemma proves the other half of the correctness of [unit_deriv]:  If
-       [r] matches [c::cs] and [v], then [unit_deriv r c] matchs [cs] and [tt]. 
-       This proof needs to be abstracted and cleaned up a lot... *)
+    *  [r] matches [c::cs] and [v], then [unit_deriv r c] matchs [cs] and [tt]. 
+    *  This proof needs to be abstracted and cleaned up a lot... *)
    Lemma unit_deriv_corr2 t (r:regexp t) c cs v : 
      in_regexp r (c::cs) v -> wf_regexp r -> in_regexp (unit_deriv r c) cs tt.
    Proof.
@@ -2020,8 +2024,8 @@ Module Parser(PA : PARSER_ARG).
    Qed.
 
    (** This lemma tells us that if we start with a parser [p], build a [DFA],
-       and then run the [DFA] on a list of tokens, then we get [true] iff
-       the parser would've accepted the string and produced a value.  *)
+    *  and then run the [DFA] on a list of tokens, then we get [true] iff
+    *  the parser would've accepted the string and produced a value.  *)
    Lemma dfa_corr' : forall t (p:parser t) n (d:DFA), 
      build_dfa n (par2rec p) = Some d -> 
      forall ts2 ts1 state, 
@@ -2099,12 +2103,12 @@ Module Parser(PA : PARSER_ARG).
   End TABLE.
   End FNMAP.
 
-  (** ** Now we need to translate our external representation, [parser] to 
-         our internal representation [regexp] and build an appropriate [ctxt]
-         mapping function names to functions of the right type. *)
+  (** Now we need to translate our external representation, [parser] to 
+   *  our internal representation [regexp] and build an appropriate [ctxt]
+   *  mapping function names to functions of the right type. *)
 
   (** Add a new function to the end of the context and return its position as 
-      a "fresh" function name, along with the new context. *)
+   *  a "fresh" function name, along with the new context. *)
   Definition extend_state(s:ctxt_t) t1 t2 (f:fn_result_m(t1,t2)) : (fn_name * ctxt_t) := 
     (length s, s ++ (existT fn_result_m (t1,t2) f)::nil).
 
@@ -2139,8 +2143,8 @@ Module Parser(PA : PARSER_ARG).
   Definition parser2regexp t (p:parser t) : (regexp t) * ctxt_t := 
     par2reg p initial_ctxt.
 
-  (** ** Now we need to prove that the translation [parser2regexp] preserves
-         meaning. *)
+  (** Now we need to prove that the translation [parser2regexp] preserves
+   *  meaning. *)
 
   (** Tactic to propagate information about the translation. *)
   Ltac unfold_par2reg := 
@@ -2156,7 +2160,7 @@ Module Parser(PA : PARSER_ARG).
     end.
 
   (** Define a partial order on contexts, which the translation respects.  That is,
-      the input context is always less than the output context. *)
+   *  the input context is always less than the output context. *)
   Definition ctxt_leq(c1 c2:ctxt_t) : Prop := 
     exists c:ctxt_t, c2 = c1 ++ c.
 
@@ -2304,7 +2308,7 @@ Module Parser(PA : PARSER_ARG).
   Qed.
 
   (** If [(cs,v)] is in [[r]] under context [s2], and [r] is well-formed with respect to
-     context [s1], and [s1 <= s2], then [(cs,v)] is in [[r]] under context [s1]. *)
+   *  context [s1], and [s1 <= s2], then [(cs,v)] is in [[r]] under context [s1]. *)
   Lemma extends_in : 
     forall t (r:regexp t) cs v s1 s2, 
       in_regexp s2 r cs v -> 
@@ -2320,7 +2324,7 @@ Module Parser(PA : PARSER_ARG).
   Hint Resolve extends_in : dfa.
 
   (** If [(cs,v)] is in [r] under context [s], where [(r,s) = par2reg p], then
-      [(cs,v)] is in [p]. *)
+   *  [(cs,v)] is in [p]. *)
   Lemma r2p_ok : forall t (p:parser t) s cs v, 
     in_regexp (snd (par2reg p s)) (fst (par2reg p s)) cs v -> 
     in_parser p cs v.
@@ -2362,7 +2366,7 @@ Module Parser(PA : PARSER_ARG).
   Qed.
 
   (** Finally -- convert the parser to a regexp and then run the 
-     derivative-based parser on this. *)
+   *  derivative-based parser on this. *)
   Definition parse t (p:parser t) : list char_p -> list (result_m t) := 
     deriv_parse (snd (parser2regexp p))
                 (fst (parser2regexp p)) (p2r_wf p _).

@@ -116,8 +116,6 @@ Definition emptyPrefix := mkPrefix None None false false.
 
 Module Int32SetFacts := Coq.MSets.MSetFacts.Facts ReinsVerifier.Int32Set.
 
-(* Todo: organize the following *)
-
 Lemma chunkSize_gt_0 : chunkSize > 0.
 Proof. unfold chunkSize. apply Coqlib.two_power_nat_pos. Qed.
 
@@ -561,9 +559,9 @@ Section VERIFIER_CORR.
    Definition l2ll {A} (l : list A) : list (list A) :=
      l2ll' 2 l nil.
 
-  (** * Definitions for aiding the verifier correctness proof *)
+  (** Definitions for aiding the verifier correctness proof *)
 
-  (* Basic ideas of developing correctness proof of the fast verifier:
+  (** Basic ideas of developing correctness proof of the fast verifier:
    *  (1) Define a pseudo instruction to be either a non-control-flow instruction, 
    *      a direct-jump instruction, or a reinsjmp (which corresponds
    *      to two real instructions);
@@ -706,8 +704,8 @@ Section VERIFIER_CORR.
 
   (** * REINS Verifier Correctness Proof *)
   
-  (** ** Auxliary lemmas about lists, skipn, and firstn *)
-  (* NOTE:  Due to the list of list change, additional lemmas may need to be added.  *)
+  (** Auxliary lemmas about lists, skipn, and firstn *)
+  (* NOTE:  Due to the list of list change, additional lemmas need to be added.  *)
 
   Lemma nth_nil : forall (A:Type) n (default:A),
     nth n nil default = default.
@@ -812,8 +810,8 @@ Section VERIFIER_CORR.
     destruct l; prover.
   Qed.
 
-  (** ** Properties of codeLoaded *)
-  (* Our code segment will not be greater than 2^32 *) 
+  (** Properties of codeLoaded *)
+  (*  Our code segment will not be greater than 2^32 *) 
   Lemma codeLoaded_length : forall code s,
     codeLoaded code s -> Z_of_nat (length code) <= w32modulus.
   Proof. unfold codeLoaded. intros.
@@ -865,7 +863,7 @@ Section VERIFIER_CORR.
         rewrite <- minus_n_O in H. prover.
   Qed.
 
-  (** ** Properties of safeInK and safeInSomeK *)
+  (** Properties of safeInK and safeInSomeK *)
   Lemma safeInSomeK_no_fail : forall s inv,
     safeInSomeK s inv -> nextStepNoFail s.
   Proof. unfold safeInSomeK. intros. destruct H as [k H]. destruct k; prover. Qed.
@@ -885,7 +883,7 @@ Section VERIFIER_CORR.
       -> safeInK 1%nat s inv.
   Proof. prover. Qed.
 
-  (** ** Properties of subsetRegion *)
+  (** Properties of subsetRegion *)
   Ltac subsetRegion_intro_tac :=
     unfold subsetRegion; bool_intro_tac.
 
@@ -896,8 +894,6 @@ Section VERIFIER_CORR.
       -> Ensembles.Included _ (addrRegion start1 limit1)
            (addrRegion start2 limit2).
   Proof.
-  (* Admitted. *)
-
    unfold subsetRegion, Ensembles.Included. intros.
    unfold Ensembles.In, addrRegion in *.
    bool_elim_tac.
@@ -969,8 +965,8 @@ Section VERIFIER_CORR.
     apply disjointRegions_sound; try assumption.
   Qed.
 
-  (** ** Properties about eqCodeRegion *)
-  (* Checks that for two RTL states, they have the same code region limits *) 
+  (** Properties about eqCodeRegion *)
+  (*  Checks that for two RTL states, they have the same code region limits *) 
   Lemma eqCodeRegion_intro : forall s s',
       Same_Seg_Regs_Rel.brel s s'
         -> checkSegments s = true
@@ -1046,7 +1042,7 @@ Section VERIFIER_CORR.
     eapply agree_over_addr_region_trans; eassumption.
   Qed.
 
-  (** ** Properties abour parse_instr *)
+  (** Properties abour parse_instr *)
   Opaque Decode.X86_PARSER.parse_byte.
 
   (* Give it a chunk of memory and it gives the instruction at that location
@@ -1165,7 +1161,7 @@ Section VERIFIER_CORR.
 
   Transparent Decode.X86_PARSER.parse_byte.
 
-  (** ** Misc. lemmas *)
+  (** Misc. lemmas *)
 
   Lemma Int32Set_in_dichotomy : forall x y A B,
     Int32Set.In x (Int32Set.diff A B)
@@ -1175,9 +1171,9 @@ Section VERIFIER_CORR.
       int32_to_Z_tac. prover.
   Qed.
 
-  (** ** Properties of process_buffer *)
+  (** Properties of process_buffer *)
 
-  (* process buffer prover *)
+  (*  process buffer prover *)
   Local Ltac pbprover :=
     simtuition ltac:(auto with arith zarith); autorewrite with pbDB in *; 
       rewriter; simtuition ltac:(auto with arith zarith). 
@@ -1708,7 +1704,7 @@ Section VERIFIER_CORR.
         exists bytes1. prover.
   Qed.
 
-  (** ** A theorem about immutable code region *)
+  (** A theorem about immutable code region *)
 
   Section FETCH_INSTR_CODE_INV.
 
@@ -1752,8 +1748,8 @@ Section VERIFIER_CORR.
     assert (H22: AddrMap.get (CStart s1 +32 pc) (rtl_memory s1)
                 = AddrMap.get (CStart s1 +32 pc) (rtl_memory s2)).
       apply H13. apply H20. apply addrRegion_start_in.
-   (* all useful hypotheses from fetch_instruction pc s1 = ... 
-      are now in the context *)
+   (** all useful hypotheses from fetch_instruction pc s1 = ... 
+    *  are now in the context *)
     eapply rtl_bind_okay_intro. eassumption.
     remember_destruct_head as pl. 
     inversion Hpl. subst p p0. 
@@ -1950,7 +1946,7 @@ Section VERIFIER_CORR.
     rewrite list_length_map. omega.
   Qed.
 
-  (** ** Properties of run_dep *)
+  (** Properties of run_dep *)
   Lemma run_rep_same_seg_regs : forall pre ins dpc,
     same_seg_regs (RTL_step_list (instr_to_rtl pre ins))
       -> same_seg_regs (run_rep pre ins dpc).
@@ -2051,7 +2047,7 @@ Section VERIFIER_CORR.
         prover. inversion H4. inversion H1. subst. congruence.
   Qed.        
 
-  (** ** Proving that any non-cflow-instr reaches a safe state in one step *)
+  (** Proving that any non-cflow-instr reaches a safe state in one step *)
   Ltac step_tac := 
    match goal with 
     | [H1: step_immed ?s ?s' |- _] =>
@@ -2421,8 +2417,8 @@ Section VERIFIER_CORR.
       -> non_cflow_instr pre ins = true
       -> safeState s inv
       -> s ==> s'
-         (* the case of "PC s' = PC s" is for the case of MOVS/STOS/CMPS with a
-            repeat prefix *)
+         (** the case of "PC s' = PC s" is for the case of MOVS/STOS/CMPS with a
+          *  repeat prefix *)
       -> PC s' = PC s +32_p len \/ PC s' = PC s.
   Proof. intros.
     safestate_unfold_tac.
@@ -2518,7 +2514,7 @@ Section VERIFIER_CORR.
         split. trivial. trivial.
   Qed.
 
-  (** ** Proving that dir_cflow_instr can reach safe state in one step *)
+  (** Proving that dir_cflow_instr can reach safe state in one step *)
   Lemma dci_eqCodeRegion: forall pre ins s v' s',
     dir_cflow_instr pre ins = true
       -> checkSegments s = true
@@ -2620,7 +2616,7 @@ Section VERIFIER_CORR.
     use_lemma dci_checkSegments_inv by eassumption.
     unfold Same_Seg_Regs_Rel.brel in *.
     prover.
-  Qed. (* ??? why is this slow *)
+  Qed. 
 
   (* todo: put all these kinds of lemmas together *)
   Lemma no_prefix_no_lock_rep : forall pre,
@@ -2959,7 +2955,7 @@ Section VERIFIER_CORR.
   Qed. 
 
 
-  (** ** the proof that reinsjmp is safe in two steps *)
+  (** The proof that reinsjmp is safe in two steps *)
   Lemma reinsjmp_first_non_cflow_instr : forall pre1 ins1 pre2 ins2,
     reinsjmp_nonIAT_mask_instr pre1 ins1 pre2 ins2 = true 
       -> non_cflow_instr pre1 ins1 = true.
@@ -3701,8 +3697,8 @@ Section VERIFIER_CORR.
     simpl. rewrite token2byte_inv_byte2token. prover.
   Qed.
 
-  (* todo: two defs of byte2token in ReinsVerifier.v and DFACorrectness.v;
-     should remove one of them *)
+  (** TODO: two defs of byte2token in ReinsVerifier.v and DFACorrectness.v;
+   *  should remove one of them *)
   Lemma byte2token_same : forall l,
     List.map byte2token l = List.map ReinsVerifier.byte2token l.
   Proof. unfold byte2token, ReinsVerifier.byte2token. 
@@ -3804,10 +3800,10 @@ Section VERIFIER_CORR.
     rewrite H6. rewrite H5. simpl. reflexivity.
   Qed.
 
-  (* Including the following hypotheses in the context will make
-     some tactics such as discriminate extremely slow since they will
-     try to evaluate terms such as opt_dir_cflow_dfa, which are
-     huge terms.*)
+  (** Including the following hypotheses in the context will make
+   *  some tactics such as discriminate extremely slow since they will
+   *  try to evaluate terms such as opt_dir_cflow_dfa, which are
+   *  huge terms.*)
   Hypothesis non_cflow_dfa_built: 
     abstract_build_dfa 256 nat2bools 400 (par2rec non_cflow_parser)
       = Some non_cflow_dfa.
@@ -3825,7 +3821,7 @@ Section VERIFIER_CORR.
 
   (* The three cases when the current state is a safe state *)
   (* The proof theorem needs the interface lemmas from the parser;
-     will prove this theorem when the lemmmas become stable *)
+   * will prove this theorem when the lemmmas become stable *)
   Theorem safeState_next_instr : forall s code startAddrs,
     codeLoaded code s
       -> checkProgram code = (true, startAddrs)
@@ -3992,7 +3988,7 @@ Section VERIFIER_CORR.
         assumption.
   Qed.
 
-  (** ** the proof that any safeState is safe for in some k *)
+  (** The proof that any safeState is safe for in some k *)
 
   Lemma pc_out_bound_safeInSomeK : forall s inv,
     ~ inBoundCodeAddr (PC s) s -> safeState s inv -> safeInSomeK s inv.
@@ -4105,8 +4101,8 @@ Section VERIFIER_CORR.
   Qed.
   Transparent Decode.X86_PARSER.parse_byte.
 
-  (* The proof of this theorem needs to perform case analysis over
-     the current pseudo instruction *)
+  (** The proof of this theorem needs to perform case analysis over
+   *  the current pseudo instruction *)
   Theorem safeState_safeInK: 
     forall s inv, safeState s inv -> safeInSomeK s inv.
   Proof. intros. clean. dupHyp H.

@@ -1,13 +1,13 @@
-(* Copyright (c) 2011. Greg Morrisett, Gang Tan, Joseph Tassarotti, 
-   Jean-Baptiste Tristan, and Edward Gan.
-
-   This file is part of RockSalt.
-
-   This file is free software; you can redistribute it and/or
-   modify it under the terms of the GNU General Public License as
-   published by the Free Software Foundation; either version 2 of
-   the License, or (at your option) any later version.
-*)
+(** Copyright (c) 2011. Greg Morrisett, Gang Tan, Joseph Tassarotti, 
+ *  Jean-Baptiste Tristan, and Edward Gan.
+ *
+ *  This file is part of RockSalt.
+ *
+ *  This file is free software; you can redistribute it and/or
+ *  modify it under the terms of the GNU General Public License as
+ *  published by the Free Software Foundation; either version 2 of
+ *  the License, or (at your option) any later version.
+ *)
 
 Require ExtrOcamlString.
 Require ExtrOcamlNatBigInt.
@@ -243,8 +243,8 @@ Module X86_Decode.
       end.
 
 
-  (* check that the addr is not greater the segment_limit, and then 
-     add the specified segment base *)
+  (** check that the addr is not greater the segment_limit, and then 
+   *  add the specified segment base *)
   Definition add_and_check_segment (seg:segment_register) (a:pseudo_reg size32) : 
     Conv (pseudo_reg size32) := 
     p1 <- get_seg_start seg ; 
@@ -352,8 +352,8 @@ Module X86_Decode.
                           load_mem16 seg p1
     end.
 
-  (* This is a little strange because actually for example, ESP here should refer
-     to AH, EBP to CH, ESI to DH, and EDI to BH *) 
+  (** This is a little strange because actually for example, ESP here should refer
+   *  to AH, EBP to CH, ESI to DH, and EDI to BH *) 
 
   Definition iload_op8 (seg:segment_register) (op:operand) : Conv (pseudo_reg size8) :=
     match op with 
@@ -508,8 +508,8 @@ Module X86_Decode.
       | Offset_op off => addr <- load_int off;
                            set_mem8 seg p addr
     end.
-  (* given a prefix and w bit, return the appropriate load function for the
-     corresponding operand size *)
+  (** given a prefix and w bit, return the appropriate load function for the
+   *  corresponding operand size *)
   Definition load_op p w (seg:segment_register) (op:operand)
     : Conv (pseudo_reg (opsize (op_override p) w)) :=
     match op_override p as b, w return 
@@ -548,8 +548,8 @@ Module X86_Decode.
       | _ => false
     end.
 
-  (*The default segment when an operand uses ESP or EBP as a base address
-     is the SS segment*)
+  (** The default segment when an operand uses ESP or EBP as a base address
+   *  is the SS segment*)
   Definition get_segment_op (p:prefix) (def:segment_register) (op:operand)
     : segment_register := 
     match seg_override p with 
@@ -633,6 +633,7 @@ Module X86_Decode.
     one <- load_Z size1 1;
     p <- @compute_parity_aux s op r1 8; (* ACHTUNG *)
     arith xor_op p one.
+
 
   (**********************************************)
   (*   Conversion functions for instructions    *)
@@ -906,15 +907,15 @@ Definition conv_SAHF: Conv unit :=
         set_flag AF b0.
 
 
-  (* If e is true, then this is sub, otherwise it's cmp 
-     Dest is equal to op1 for the case of SUB,
-     but it's equal to op2 for the case of NEG
-     
-     We use segdest, seg1, seg2 to specify which segment
-     registers to use for the destination, op1, and op2.
-     This is because for CMPS, only the first operand's 
-     segment can be overriden. 
-  *) 
+  (** If e is true, then this is sub, otherwise it's cmp 
+   *  Dest is equal to op1 for the case of SUB,
+   *  but it's equal to op2 for the case of NEG
+   *  
+   *  We use segdest, seg1, seg2 to specify which segment
+   *  registers to use for the destination, op1, and op2.
+   *  This is because for CMPS, only the first operand's 
+   *  segment can be overriden. 
+   *) 
 
   Definition conv_SUB_CMP_generic (e: bool) (pre: prefix) (w: bool) (dest: operand) (op1 op2: operand) 
     (segdest seg1 seg2: segment_register) :=
@@ -1031,9 +1032,9 @@ Definition conv_SAHF: Conv unit :=
         set_flag AF b0;;
         set seg p2 op1.
 
-  (* I tried refactoring this so that it was smaller, but the way I did
-     it caused type-checking to seem to go on FOREVER - maybe someone more 
-     clever can figure out how to clean this up *)
+  (** I tried refactoring this so that it was smaller, but the way I did
+   *  it caused type-checking to seem to go on FOREVER - maybe someone more 
+   *  clever can figure out how to clean this up *)
 
   Definition conv_DIV (pre: prefix) (w: bool) (op: operand) :=
     let seg := get_segment_op pre DS op in
@@ -1303,8 +1304,8 @@ Definition conv_SAHF: Conv unit :=
     let load := load_op pre w in 
     let set := set_op pre w in 
     let seg := get_segment_op pre DS op1 in
-      (* These aren't actually undef'd, but they're sqirrely
-         so for now I'll just overapproximate *)
+      (** These aren't actually undef'd, but they're sqirrely
+       *  so for now I'll just overapproximate *)
       undef_flag OF;;
       undef_flag CF;;
       undef_flag SF;;
@@ -1417,8 +1418,8 @@ Definition conv_SAHF: Conv unit :=
              end);
       thirtytwo <- load_Z _ 32;
       count <- arith modu_op count thirtytwo;
-      (* These aren't actually always undef'd, but they're sqirrely
-         so for now I'll just overapproximate *)
+      (** These aren't actually always undef'd, but they're sqirrely
+       *  so for now I'll just overapproximate *)
       undef_flag CF;;
       undef_flag SF;;
       undef_flag ZF;;
@@ -1458,8 +1459,8 @@ Definition conv_SAHF: Conv unit :=
              end);
       thirtytwo <- load_Z _ 32;
       count <- arith modu_op count thirtytwo;
-      (* These aren't actually always undef'd, but they're sqirrely
-         so for now I'll just overapproximate *)
+      (** These aren't actually always undef'd, but they're sqirrely
+       *  so for now I'll just overapproximate *)
       undef_flag CF;;
       undef_flag SF;;
       undef_flag ZF;;
@@ -1487,14 +1488,15 @@ Definition conv_SAHF: Conv unit :=
       guard <- arith or_op guard1 guard2;
       emit (if_rtl guard (choose_rtl newdest));;
       set seg newdest op1.
+
   (************************)
   (* Binary Coded Dec Ops *)
   (************************)
 
-  (* The semantics for these operations are described using slightly different pseudocode in the
-     old and new intel manuals, although they are operationally equivalent. These definitions
-     are structured based on the new manual, so it may look strange when compared with the old
-     manual *)
+  (** The semantics for these operations are described using slightly different pseudocode in the
+   *  old and new intel manuals, although they are operationally equivalent. These definitions
+   *  are structured based on the new manual, so it may look strange when compared with the old
+   *  manual *)
 
   Definition get_AH : Conv (pseudo_reg size8) :=
     iload_op8 DS (Reg_op ESP)
@@ -1716,8 +1718,7 @@ Definition conv_SAHF: Conv unit :=
   (* This is like AND except you don't actually write the result in op1 *)
   Definition conv_TEST p w op1 op2 := conv_logical_op false and_op p w op1 op2.
 
-  (* This is different than the others because it doesn't affect any
-     flags *)
+  (* This is different than the others because it doesn't affect any flags *)
 
   Definition conv_NOT (pre: prefix) (w: bool) (op: operand) : Conv unit :=
     let load := load_op pre w in 
@@ -1727,6 +1728,7 @@ Definition conv_SAHF: Conv unit :=
         max_unsigned <- load_Z _ (Word.max_unsigned size32);
         p1 <- arith xor_op p0 max_unsigned;
         set seg p1 op.
+
 
   (************************)
   (* Stack Ops            *)
@@ -1912,6 +1914,7 @@ Definition conv_POPF pre :=
   extract_and_set v 0 CF.
 *)
 
+
   (************************)
   (* Control-Flow Ops     *)
   (************************)
@@ -2002,12 +2005,13 @@ Definition conv_POPF pre :=
     emit (if_rtl bcond (set_loc_rtl eip2 pc_loc))
     .
 
+
   (************************)
   (* Misc Ops             *)
   (************************)
 
-  (* Unfortunately this is kind of "dumb", because we can't short-circuit
-     once we find the msb/lsb *)
+  (** Unfortunately this is kind of "dumb", because we can't short-circuit
+   *  once we find the msb/lsb *)
 
   Fixpoint conv_BS_aux {s} (d: bool) (n: nat) (op: pseudo_reg s) : Conv (pseudo_reg s) :=
     let curr_int := (match d with
@@ -2083,8 +2087,8 @@ Definition conv_POPF pre :=
     let set := set_mem pre w seg in
     value <- load addr;
     newvalue <- modify_Bit value poff bitval;
-    (* adding copy_ps makes the proof much easier since it meets the pattern 
-             "addr <- v; set_mem_n ... addr" *)
+    (** adding copy_ps makes the proof much easier since it meets the pattern 
+     *  "addr <- v; set_mem_n ... addr" *)
     newaddr <- copy_ps addr; 
     set newvalue newaddr.
 
@@ -2234,8 +2238,8 @@ Definition conv_POPF pre :=
         res <- load seg op2;
         set seg res op1.
 
-  (* Note that cmov does not have a byte mode - however we use it as a pseudo-instruction
-     to simplify some of the other instructions (e.g. CMPXCHG *)
+  (** Note that cmov does not have a byte mode - however we use it as a pseudo-instruction
+   *  to simplify some of the other instructions (e.g. CMPXCHG *)
 
   Definition conv_CMOV (pre: prefix) (w: bool) (cc: condition_type) (op1 op2: operand) : Conv unit :=
     let load := load_op pre w in 
@@ -2251,9 +2255,9 @@ Definition conv_POPF pre :=
     -> Conv (pseudo_reg s2)) (pre: prefix) (w: bool) (op1 op2: operand) : Conv unit :=
     let seg := get_segment_op2 pre DS op1 op2 in
     match op_override pre, w with
-      (* It's not really clear what should be done true, true here. It's not in the table,
-         but it seems to be a valid instruction. It would correspond to sign/zero
-         extending a 16 bit value to a 16 bit value... ie just moving *)
+      (** It's not really clear what should be done true, true here. It's not in the table,
+       *  but it seems to be a valid instruction. It would correspond to sign/zero
+       *  extending a 16 bit value to a 16 bit value... ie just moving *)
       | true, true =>  p1 <- iload_op16 seg op2;
                        iset_op16 seg p1 op1
       | false, true => p1 <- iload_op16 seg op2;
@@ -2283,16 +2287,16 @@ Definition conv_POPF pre :=
     conv_XCHG pre w op1 op2;;
     conv_ADD pre w op1 op2.
 
-  (* This actually has some interesting properties for concurrency stuff
-     but for us this doesn't matter yet *)
+  (** This actually has some interesting properties for concurrency stuff
+   *  but for us this doesn't matter yet *)
   Definition conv_CMPXCHG (pre: prefix) (w: bool) (op1 op2: operand) : Conv unit :=
     (* The ZF flag will be set by the CMP to be zero if EAX = op1 *)
     conv_CMP pre w (Reg_op EAX) op1;;
     conv_CMOV pre w (E_ct) op1 op2;;
     conv_CMOV pre w (NE_ct) (Reg_op EAX) op1.
 
-  (* This handles shifting the ESI/EDI stuff by the correct offset
-     and in the appopriate direction for the string ops *) 
+  (** This handles shifting the ESI/EDI stuff by the correct offset
+   *  and in the appopriate direction for the string ops *) 
  
   Definition string_op_reg_shift reg pre w : Conv unit :=
     offset <- load_Z _  
@@ -2380,8 +2384,8 @@ Definition conv_POPF pre :=
       ccext <- cast_u size8 ccval;
       iset_op8 seg ccext op.
       
-  (* Just a filter for some prefix stuff we're not really handling yet.
-     In the future this should go away. *)
+  (** Just a filter for some prefix stuff we're not really handling yet.
+   *  In the future this should go away. *)
 
   Definition check_prefix (p: prefix) := 
     (match op_override p, addr_override p with
@@ -2538,16 +2542,16 @@ Fixpoint fetch_n (n:nat) (loc:int32) (r:rtl_state) : list int8 :=
         fetch_n m (Word.add loc (Word.repr 1)) r
   end.
 
-(** Go into a loop trying to parse an instruction.  We iterate at most [n] times,
-    and at least once.  This returns the first successful match of the parser
-    as well as the length (in bytes) of the matched instruction.  Right now, 
-    [n] is set to 15 but it should probably be calculated as the longest possible
-    match for the instruction parsers.  The advantage of this routine over the
-    previous one is two-fold -- first, we are guaranteed that the parser only
-    succeeds when we pass in bytes.  Second, we only fetch bytes that are
-    needed, so we don't have to worry about running out side a segment just
-    to support parsing.
-*)
+(**  Go into a loop trying to parse an instruction.  We iterate at most [n] times,
+ *   and at least once.  This returns the first successful match of the parser
+ *   as well as the length (in bytes) of the matched instruction.  Right now, 
+ *   [n] is set to 15 but it should probably be calculated as the longest possible
+ *   match for the instruction parsers.  The advantage of this routine over the
+ *   previous one is two-fold -- first, we are guaranteed that the parser only
+ *   succeeds when we pass in bytes.  Second, we only fetch bytes that are
+ *   needed, so we don't have to worry about running out side a segment just
+ *   to support parsing.
+ *)
 Fixpoint parse_instr_aux
   (n:nat) (loc:int32) (len:positive) (ps:Decode.X86_PARSER.instParserState) : 
   RTL ((prefix * instr) * positive) := 
@@ -2568,10 +2572,10 @@ Definition parse_instr (pc:int32) : RTL ((prefix * instr) * positive) :=
     parse_instr_aux 15 real_pc 1 Decode.X86_PARSER.initial_parser_state.
 
 (** Fetch an instruction at the location given by the program counter.  Return
-    the abstract syntax for the instruction, along with a count in bytes for 
-    how big the instruction is.  We fail if the bits do not parse, or have more
-    than one parse.  We should fail if these locations aren't mapped, but we'll
-    deal with that later. *)
+ *  the abstract syntax for the instruction, along with a count in bytes for 
+ *  how big the instruction is.  We fail if the bits do not parse, or have more
+ *  than one parse.  We should fail if these locations aren't mapped, but we'll
+ *  deal with that later. *)
 Definition fetch_instruction (pc:int32) : RTL ((prefix * instr) * positive) :=
   [pi, len] <- parse_instr pc;
   in_bounds_rng <- in_seg_bounds_rng CS pc (Word.repr (Zpos len - 1));
@@ -2614,10 +2618,10 @@ Definition run_rep
 Definition step : RTL unit := 
   flush_env;;
   pc <- get_loc pc_loc ; 
-  (* check if pc is in the code region; 
-     different from the range checks in fetch_instruction; 
-     this check makes sure the machine safely fails when pc is 
-     out of bounds so that there is no need to fetch an instruction *)
+  (** check if pc is in the code region; 
+   *  different from the range checks in fetch_instruction; 
+   *  this check makes sure the machine safely fails when pc is 
+   *  out of bounds so that there is no need to fetch an instruction *)
   pc_in_bounds <- in_seg_bounds CS pc;
   if (pc_in_bounds) then 
     [pi,length] <- fetch_instruction pc ; 

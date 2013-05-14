@@ -3,18 +3,33 @@ VERIFYING REINS IN COQ
 ======================
 The following is provided in this README file:
     I.    Introduction
-    II.   Dependecies
-    III.  Code Compiliation
+    II.   Dependencies
+    III.  Code Compilation
     IV.   Execution & Output
     V.    Testing (EXEs)
     VI.   Structure
     VII.  Important Notes
-    VIII. REINS Verifier Explained
+    VIII. REINS & The REINS Verifier 
 
 
 I. INTRODUCTION
 ===============
+    This collection of files serves as a formal verifier for rewritten binaries 
+    produced by the native code REwriting and IN-lining System (REINS), as 
+    presented in "Securing Untrusted Code via Compiler-Agnostic Binary Rewriting" 
+    by Richard Wartell, Viswath Mohan, Kevin W. Hamlen, and Zhiqiang Lin. 
 
+    The Coq code for the REINS verifier is based on the RockSalt project 
+    (sos.cse.lehigh.edu/gonative/) by Greg Morrisett, Gang Tan, Joseph Tassarotti, 
+    Jean-Baptiste Tristan, and Deward Gan.
+
+    The University of Texas at Dallas students who have worked on this project are 
+    Benjamin Ferrell, Gil Lundquist, Kenneth Miller, Matthew Pettersson, Justin Sahs, 
+    and Brett Webster.
+
+    This project is free software; you can redistribute it and/or modify it under 
+    the terms of the GNU General Public License as published by the Free Software 
+    Foundation; either version 2 of the License, or (at your option) any later version.
 
 
 II. DEPENDECIES
@@ -25,20 +40,21 @@ II. DEPENDECIES
 		http://caml.inria.fr/download.en.html
 
 
-III. CODE COMPILIATION
+III. CODE COMPILATION
 ====================== 
     
     LINUX/MAC
     ---------
         Go to reins-verifier-proof directory and run 'make', this compiles the Model, 
-        REINS, and Test folders.  Compliation takes about an hour and is very resource 
-        (memory) intensive towards the end.
+        REINS, and Test folders.  Compliation takes about an hour (for a relatively 
+        current machine with 4GB of ram) and is very resource (memory) intensive 
+        towards the end (time varies according to machine and the amount of ram). 
 
     WINDOWS
 	-------
         We strongly suggest that WIN users install CYGWIN, thus allowing the 'make' 
 	    command (See "COMPILING IN LINUX/MAC"), provided that all dependencies are met.  
-	    However, if a minimal instalation with only the listed dependecies is desired, 
+	    However, if a minimal installation with the listed dependencies only is desired, 
         users should compile in the following order:
 		    /Model
 		    	coqc Coqlib.v
@@ -89,7 +105,7 @@ V. TESTING (EXEs)
 		maskOnWrongReg		- [Fail] No Register Mask (anding the register) on a JMP
 		noAndBeforeCall.exe	- [Fail] No Register Mask (anding the register) on a Call
 		safe.exe			- [Pass] No Violations or IAT Calls; Conforms to REINS Constraints
-		wrongMask.exe		- [Fail] Incorrect Mask; Has the Mask 0xeffffff0 Instead of 0x0ffffff0
+		wrongMask.exe		- [Fail] Incorrect Mask; Has Mask 0xeffffff0 Instead of 0x0ffffff0
 
 
 VI. STRUCTURE
@@ -98,8 +114,10 @@ VI. STRUCTURE
 		/Model
             Bits.v                      - Bitvector Definitions, Lemmas, Theorems, etc.
             CheckDeterministic.v        - Proof that the defined x86 parser is Deterministic
-            Coqlib.v                    - Commonly Helpful Definitions and Tactics not standard in Coq
-            Decode.v                    - Parser for the x86 Instructions built by Parser.v (bitstrings -> x86 AST)
+            Coqlib.v                    - Commonly Helpful Definitions and Tactics not standard 
+                                          in Coq
+            Decode.v                    - Parser for the x86 Instructions built by Parser.v 
+                                          (bitstrings -> x86 AST)
             Makefile
             Maps.v                      - Finite Map Library 
             Monad.v                     - Monad Class 
@@ -107,22 +125,23 @@ VI. STRUCTURE
             ParserTest.v            
             RTL.v                       - The RTL Language; See the RockSalt paper.
             Tacs.v                      - Helpful Tactics
-            X86Semantics.v              - Specification of the x86 Semantics, Using the RTL Library
+            X86Semantics.v              - Specification of x86 Semantics, Using the RTL Library
             X86Syntax.v                 - AST for x86 
 		/REINS
             CompiledDFAs.v              - Hard Coded Output of DFACompiler.v
-            DFACompiler.v               - Constructs the (5) DFAs (3 REINSjmp, dir and indirect flow)
+            DFACompiler.v               - Constructs the DFAs (3xREINSjmp, dir and indirect flow)
             DFACorrectness.v			- Proofs of Correctness for the Generated DFAs		
             Int32.v                     - Lemmas needed for Integer Arithmetic
             Makefile
-            PEFormat.v                  - Definitions for Portable Executeables (PEs)
-            PETraversal.v               - Parser for Portable Executeables (PEs)
+            PEFormat.v                  - Definitions for Portable Executables (PEs)
+            PETraversal.v               - Parser for Portable Executables (PEs)
             REINSjmp.v                  - Lemmas for Masked (REINS) Jumps
 			reinsverif.ml
             reinsverif.mli              
             ReinsVerifier.v             - Coq Version of the Verifier
             ReinsVerifierCorrectness.v  - Proof of Verifier Correctness 
-            ReinsVerifierDFA.v          - Definitions of DFAs used by the Verifier to Classify Instructions
+            ReinsVerifierDFA.v          - Definitions of DFAs used by the Verifier to 
+                                          Classify Instructions
             X86Lemmas.v                 - Lemmas about x86 Semantics
 		/Test							- See Section V. TESTING (EXEs)
             callNotAtEnd.exe
@@ -142,15 +161,6 @@ VI. STRUCTURE
 
 VII. IMPORTANT NOTES
 ====================
-    The format of sections were changed due to speed, memory, and crash 
-    concerns; what was a list of bytes is now a list of list of bytes.  Also note 
-	that each section contains bounds information that is checked against the low 
-	memory boundary. 
-
-    To avoid updating reinsverif.ml each time changes are made, Word.int 
-    (in RockSalt) was changed to Word.wint (in REINS--in other words this for 
-    compatability with OCaml).  
-
     To work around some memory issues in Coq, the process of converting the
     grammars defined in Model/Decode.v and REINS/ReinsVerifierDFA.v to DFAs for
     efficient matching is done as a separate manual step. This conversion is done
@@ -159,22 +169,57 @@ VII. IMPORTANT NOTES
     referenced in the Makefiles), but must be run any time any of the grammars are
     modified.
 
+	The format of sections were changed due to speed, memory, and crash 
+    concerns; what was a list of bytes is now a list of list of bytes.  Also note 
+	that each section contains bounds information that is checked against the low 
+	memory boundary. 
 
-VIII. REINS VERIFIER EXPLAINED
-==============================
-    REINS is "the first, purely static, CISC native code rewriting and in-lining system, that 
-    requires no cooperation from code-producers"; as presented in full in "Securing Untrusted
-    Code via Compiler-Agnostic Binary Rewriting" by Richard Wartell, Viswath Mohan, Kevin W. 
-    Hamlen, and Zhiqiang Lin. 
-    The REINS Verifier is an extension of RockSalt (sos.cse.lehigh.edu/gonative/), 
-    by Greg Morrisett, Gang Tan, Joseph Tassarotti, Jean-Baptisete Tristan, and Edward Gan.   
+    To avoid updating reinsverif.ml each time changes are made, Word.int 
+    (in RockSalt) was changed to Word.wint (in REINS--in other words this for 
+    compatibility with OCaml).  
+
+    Incidenlty, the Windows versions of Coq seem to compile quicker than that of Mac.
+
+
+VIII. REINS & THE REINS VERIFIER
+================================
+    REINS is "the first, purely static, CISC native code REwriting and IN-lining 
+    System, that requires no cooperation from code-producers"; that is, no source 
+    code, debugging symbols, or special information is required (for REINS) to 
+    produce 'safe' code.  
     
-    HIGH-LEVEL
-    ----------
-        The REINS Verifier, as well as RockSalt, 
+    REINS is designed with "a set of novel techniques to support binary families 
+    for which fully correct automated disassembly is provably undecidable, including 
+    those that contain computed jumps, dynamic linking, static data interleaved with 
+    code, and untrusted callback functions invoked by the OS".
+
+    This project, the REINS Verifier, is a separate verifier (from REINS) that
+    formally certifies (REINS) rewritten binaries are policy-adherent; effectively 
+    minimizing REINS trusted computing base (TCB).  As stated in the REINS paper; 
+    "Malicious binaries that defeat the rewriter's analysis might result in 
+    rewritten binaries that fail verification or that fail to execute properly, 
+    but never in policy violations".
+    
+    The RockSalt project, a new NaCl checker for the 32-bit x86 (IA-32) processor, 
+    consist of many important contributions.  One contribution, the RockSalt x86 
+    Coq model, we use as the foundation of the REINS Verifier.
+    
+    RockSalt's "Coq model of the x86 instruction set architecture has three major 
+    stages: (1) a decoder that translates bytes into abstract syntax for instructions,
+    (2) a compiler that translates abstract syntax into sequences of RTL (register 
+    transfer list) instructions (3) an interpreter for RTL instructions.  The interface
+    between the first two components is the definition of the abstract syntax, which 
+    is specified using a set of inductive datatype definitions. (Page 2 of the RockSalt 
+    paper)  
+    
+    The majority of RockSalt's x86 Model (i.e., ./Model) has been sufficent for the 
+    REINS Verifier; only the Bit.v has required modifications (this due to tighter 
+    constraints on a larger set of possible binaries).  RockSalt's NaCl Checker,
+    on the other hand, required many modifications in adopting REINS constraints.
+    The two most notable examples are the additional DFA's and the need for Portable 
+    Executable (PE) functionality. NACL and REINS Constraints are shown below:
       
-    NACL CONSTRAINTS
-    ----------------
+    NACL Constraints:
         1.  Binary not writeable after load. 
         2.  Statically Linked:
                 Start at 0
@@ -185,9 +230,8 @@ VIII. REINS VERIFIER EXPLAINED
         6.  All valid instructions are reachable by fall through disassembly.
         7.  All direct control flow targets valid instructions.
 
-    REINS CONSTRAINTS
-    -----------------
-        1.  All execuatable sections reside in low memory.
+    REINS Constraints:
+        1.  All executable sections reside in low memory.
         2.  All exported symbols target low memory chunck boundaries.  
         3.  Static branches target low memory chunck boundaries.
         4.  All non Import Address Tables (IAT) indirect control flow is masked. 
@@ -197,6 +241,7 @@ VIII. REINS VERIFIER EXPLAINED
         7.  No instruction spans chunck boundary.
         8.  Fall through disassembly.
 
+    For additional information, please see the REINS and RockSalt papers.  
 
 
 

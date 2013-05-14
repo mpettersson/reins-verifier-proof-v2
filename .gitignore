@@ -8,6 +8,8 @@
 *.cmx
 *.bak
 reinsverif.o
+reinsverif.ml
+reinsverif.mli
 Makefile.coq
 check
 check.o

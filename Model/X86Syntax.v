@@ -1,13 +1,13 @@
-(* Copyright (c) 2011. Greg Morrisett, Gang Tan, Joseph Tassarotti, 
-   Jean-Baptiste Tristan, and Edward Gan.
-
-   This file is part of RockSalt.
-
-   This file is free software; you can redistribute it and/or
-   modify it under the terms of the GNU General Public License as
-   published by the Free Software Foundation; either version 2 of
-   the License, or (at your option) any later version.
-*)
+(** Copyright (c) 2011. Greg Morrisett, Gang Tan, Joseph Tassarotti, 
+ *  Jean-Baptiste Tristan, and Edward Gan.
+ *
+ *  This file is part of RockSalt.
+ *
+ *  This file is free software; you can redistribute it and/or
+ *  modify it under the terms of the GNU General Public License as
+ *  published by the Free Software Foundation; either version 2 of
+ *  the License, or (at your option) any later version.
+ *)
 
 
 (* This file provides abstract syntax definitions for the IA32 (x86) 32-bit
@@ -17,6 +17,7 @@ Require Import Bits.
 Require Import ZArith.
 Set Implicit Arguments.
 Local Open Scope Z_scope.
+
 
 (********************************************)
 (* Type definitions for x86 abstract syntax *)
@@ -93,22 +94,22 @@ Inductive reg_or_immed : Set :=
 | Imm_ri : int8 -> reg_or_immed.
 
 Inductive condition_type : Set :=
-| O_ct (* overflow *)
-| NO_ct (* not overflow *)
-| B_ct (* below, not above or equal *)
-| NB_ct (* not below, above or equal *)
-| E_ct (* equal, zero *)
-| NE_ct (* not equal, not zero *)
-| BE_ct (* below or equal, not above *)
-| NBE_ct (* not below or equal, above *)
-| S_ct (* sign *)
-| NS_ct (* not sign *)
-| P_ct (* parity, parity even *)
-| NP_ct (* not parity, parity odd *)
-| L_ct  (* less than, not greater than or equal to *)
-| NL_ct (* not less than, greater than or equal to *)
-| LE_ct (* less than or equal to, not greater than *)
-| NLE_ct (* not less than or equal to, greater than *).
+| O_ct      (* overflow *)
+| NO_ct     (* not overflow *)
+| B_ct      (* below, not above or equal *)
+| NB_ct     (* not below, above or equal *)
+| E_ct      (* equal, zero *)
+| NE_ct     (* not equal, not zero *)
+| BE_ct     (* below or equal, not above *)
+| NBE_ct    (* not below or equal, above *)
+| S_ct      (* sign *)
+| NS_ct     (* not sign *)
+| P_ct      (* parity, parity even *)
+| NP_ct     (* not parity, parity odd *)
+| L_ct      (* less than, not greater than or equal to *)
+| NL_ct     (* not less than, greater than or equal to *)
+| LE_ct     (* less than or equal to, not greater than *)
+| NLE_ct    (* not less than or equal to, greater than *).
 
 Definition condition_type_eq_dec : 
   forall (x y:condition_type), {x=y} + {x<>y}.
@@ -136,8 +137,8 @@ Definition Z_to_condition_type(n:Z) : condition_type :=
   end.
 
 Inductive instr : Set :=
-(* two parts:  1-byte opcode instructions, followed by 2-byte in alphabetical order,
-   following Table B-13 and Table ??? *) 
+(** two parts:  1-byte opcode instructions, followed by 2-byte in alphabetical order,
+ *  following Table B-13 and Table ??? *) 
 | AAA 
 | AAD 
 | AAM 
@@ -173,10 +174,10 @@ Inductive instr : Set :=
 | DIV   : forall (w:bool)(op1:operand), instr
 | HLT  
 | IDIV  : forall (w:bool)(op1:operand), instr
-(* This one is kind of funny -- there are three cases:
-   one operand, two operand, and three operand. The one operand
-   form is precise and implicitly uses EAX; the other two variants
-   can potentially lose some data due to overflow. *)
+(** This one is kind of funny -- there are three cases:
+ *  one operand, two operand, and three operand. The one operand
+ *  form is precise and implicitly uses EAX; the other two variants
+ *  can potentially lose some data due to overflow. *)
 | IMUL  : forall (w:bool)(op1:operand) (opopt: option operand) (iopt:option int32), instr
 | IN    : forall (w:bool)(p: option port_number), instr
 | INC   : forall (w:bool)(op1:operand), instr
@@ -285,10 +286,8 @@ Record prefix : Set := mkPrefix {
 }.
 
 
-(* To add:
-
-B.3.  MMX instructions
-B.4.  Streaming SIMD instructions
-B.5.  Floating point instructions
-
-*)
+(** To add:
+ *      B.3.  MMX instructions
+ *      B.4.  Streaming SIMD instructions
+ *      B.5.  Floating point instructions
+ *)

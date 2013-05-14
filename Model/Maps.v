@@ -14,29 +14,30 @@
 (* *********************************************************************)
 
 (** Applicative finite maps are the main data structure used in this
-  project.  A finite map associates data to keys.  The two main operations
-  are [set k d m], which returns a map identical to [m] except that [d]
-  is associated to [k], and [get k m] which returns the data associated
-  to key [k] in map [m].  In this library, we distinguish two kinds of maps:
-- Trees: the [get] operation returns an option type, either [None]
-  if no data is associated to the key, or [Some d] otherwise.
-- Maps: the [get] operation always returns a data.  If no data was explicitly
-  associated with the key, a default data provided at map initialization time
-  is returned.
-
-  In this library, we provide efficient implementations of trees and
-  maps whose keys range over the type [positive] of binary positive
-  integers or any type that can be injected into [positive].  The
-  implementation is based on radix-2 search trees (uncompressed
-  Patricia trees) and guarantees logarithmic-time operations.  An
-  inefficient implementation of maps as functions is also provided.
-*)
+ *  project.  A finite map associates data to keys.  The two main operations
+ *  are [set k d m], which returns a map identical to [m] except that [d]
+ *  is associated to [k], and [get k m] which returns the data associated
+ *  to key [k] in map [m].  In this library, we distinguish two kinds of maps:
+ *
+ *  - Trees: the [get] operation returns an option type, either [None]
+ *    if no data is associated to the key, or [Some d] otherwise.
+ *  - Maps: the [get] operation always returns a data.  If no data was explicitly
+ *    associated with the key, a default data provided at map initialization time
+ *    is returned.
+ *
+ *  In this library, we provide efficient implementations of trees and
+ *  maps whose keys range over the type [positive] of binary positive
+ *  integers or any type that can be injected into [positive].  The
+ *  implementation is based on radix-2 search trees (uncompressed
+ *  Patricia trees) and guarantees logarithmic-time operations.  An
+ *  inefficient implementation of maps as functions is also provided.
+ *)
 
 Require Import Coqlib.
 
 Set Implicit Arguments.
 
-(** * The abstract signatures of trees *)
+(** The abstract signatures of trees *)
 
 Module Type TREE.
   Variable elt: Type.
@@ -65,10 +66,10 @@ Module Type TREE.
     forall (A: Type) (i: elt) (m: t A) (v: A),
     get i m = Some v -> set i v m = m.
   (* We could implement the following, but it's not needed for the moment.
-    Hypothesis grident:
-      forall (A: Type) (i: elt) (m: t A) (v: A),
-      get i m = None -> remove i m = m.
-  *)
+   * Hypothesis grident:
+   *   forall (A: Type) (i: elt) (m: t A) (v: A),
+   *   get i m = None -> remove i m = m.
+   *)
   Hypothesis grs:
     forall (A: Type) (i: elt) (m: t A), get i (remove i m) = None.
   Hypothesis gro:
@@ -134,7 +135,7 @@ Module Type TREE.
     List.fold_left (fun a p => f a (fst p) (snd p)) (elements m) v.
 End TREE.
 
-(** * The abstract signatures of maps *)
+(** The abstract signatures of maps *)
 
 Module Type MAP.
   Variable elt: Type.
@@ -161,7 +162,7 @@ Module Type MAP.
     get i (map f m) = f(get i m).
 End MAP.
 
-(** * An implementation of trees over type [positive] *)
+(** An implementation of trees over type [positive] *)
 
 Module PTree <: TREE.
   Definition elt := positive.
@@ -597,7 +598,7 @@ Module PTree <: TREE.
       end.
 
   (* Note: function [xelements] above is inefficient.  We should apply
-     deforestation to it, but that makes the proofs even harder. *)
+   * deforestation to it, but that makes the proofs even harder. *)
 
   Definition elements A (m : t A) := xelements m xH.
 
@@ -948,7 +949,7 @@ Module PTree <: TREE.
 
 End PTree.
 
-(** * An implementation of maps over type [positive] *)
+(** An implementation of maps over type [positive] *)
 
 Module PMap <: MAP.
   Definition elt := positive.
@@ -1026,7 +1027,7 @@ Module PMap <: MAP.
 
 End PMap.
 
-(** * An implementation of maps over any type that injects into type [positive] *)
+(** An implementation of maps over any type that injects into type [positive] *)
 
 Module Type INDEXED_TYPE.
   Variable t: Type.
@@ -1129,7 +1130,7 @@ End NIndexed.
 
 Module NMap := IMap(NIndexed).
 
-(** * An implementation of maps over any type with decidable equality *)
+(** An implementation of maps over any type with decidable equality *)
 
 Module Type EQUALITY_TYPE.
   Variable t: Type.
@@ -1185,7 +1186,7 @@ Module EMap(X: EQUALITY_TYPE) <: MAP.
   Qed.
 End EMap.
 
-(** * Additional properties over trees *)
+(** Additional properties over trees *)
 
 Module Tree_Properties(T: TREE).
 
@@ -1290,7 +1291,7 @@ End Tree_Properties.
 
 Module PTree_Properties := Tree_Properties(PTree).
 
-(** * Useful notations *)
+(** Useful notations *)
 
 Notation "a ! b" := (PTree.get b a) (at level 1).
 Notation "a !! b" := (PMap.get b a) (at level 1).

@@ -1,13 +1,13 @@
-(* Copyright (c) 2011. Greg Morrisett, Gang Tan, Joseph Tassarotti, 
-   Jean-Baptiste Tristan, and Edward Gan.
-
-   This file is part of RockSalt.
-
-   This file is free software; you can redistribute it and/or
-   modify it under the terms of the GNU General Public License as
-   published by the Free Software Foundation; either version 2 of
-   the License, or (at your option) any later version.
-*)
+(** Copyright (c) 2011. Greg Morrisett, Gang Tan, Joseph Tassarotti, 
+ *  Jean-Baptiste Tristan, and Edward Gan.
+ *
+ *  This file is part of RockSalt.
+ *
+ *  This file is free software; you can redistribute it and/or
+ *  modify it under the terms of the GNU General Public License as
+ *  published by the Free Software Foundation; either version 2 of
+ *  the License, or (at your option) any later version.
+ *)
 
 (* This file provides simple bit-level parsing combinators for disassembling
  * Intel IA32 (x86) 32-bit binaries. *)
@@ -186,14 +186,14 @@ Module X86_PARSER.
   Definition scale_p := (field 2) @ (Z_to_scale : _ -> result_m scale_t).
   Definition tttn := (field 4) @ (Z_to_condition_type : _ -> result_m condition_t).
 
-  (* This is used in a strange edge-case for modrm parsing. See the
-     footnotes on p37 of the manual in the repo This is a case where I
-     think intersections/complements would be nice operators *)
+  (** This is used in a strange edge-case for modrm parsing. See the
+   *  footnotes on p37 of the manual in the repo This is a case where I
+   *  think intersections/complements would be nice operators *)
 
-  (* JGM: we can handle this in the semantic action instead of the parser, 
-     so I replaced si, which used this and another pattern for [bits "100"]
-     to the simpler case below -- helps to avoid some explosions in the 
-     definitions. *)
+  (** JGM: we can handle this in the semantic action instead of the parser, 
+   *  so I replaced si, which used this and another pattern for [bits "100"]
+   *  to the simpler case below -- helps to avoid some explosions in the 
+   *  definitions. *)
   Definition reg_no_esp : parser register_t :=
      (bits "000" |+| bits "001" |+| bits "010" |+|
      bits "011" |+| (* bits "100" <- this is esp *)  bits "101" |+|
@@ -613,8 +613,8 @@ Module X86_PARSER.
       (fun x => LMSW x %% instruction_t).
 
   (* JGM: note, this isn't really an instruction, but rather a prefix.  So it
-     shouldn't be included in the list of instruction parsers. *)
-(*  Definition LOCK_p := "1111" $$ bits "0000" @ (fun _ => LOCK %% instruction_t). *)
+   * shouldn't be included in the list of instruction parsers. *)
+(*Definition LOCK_p := "1111" $$ bits "0000" @ (fun _ => LOCK %% instruction_t). *)
   Definition LODS_p := "1010" $$ "110" $$ anybit @ (fun x => LODS x %% instruction_t).
   Definition LOOP_p := "1110" $$ "0010" $$ byte @ (fun x => LOOP x %% instruction_t).
   Definition LOOPZ_p := "1110" $$ "0001" $$ byte @ (fun x => LOOPZ x %% instruction_t).
@@ -627,7 +627,7 @@ Module X86_PARSER.
     (fun x => LTR x %% instruction_t).
 
   (* This is may not be right. Need to test this thoroughly. 
-     There is no 8bit mode for CMOVcc *)
+   * There is no 8bit mode for CMOVcc *)
 
   Definition CMOVcc_p :=
     "0000" $$ "1111" $$ "0100" $$ tttn $ modrm @
@@ -989,17 +989,17 @@ Module X86_PARSER.
   Definition addr_override_p : parser bool_t :=
     "0110" $$ bits "0111" @ (fun _ => true %% bool_t).
 
-  (* Ok, now I want all permutations of the above four parsers. 
-     I make a little perm2 combinator that takes two parsers and gives you
-     p1 $ p2 |+| p2 $ p1, making sure to swap the results in the second case *)
+  (** Ok, now I want all permutations of the above four parsers. 
+   *  I make a little perm2 combinator that takes two parsers and gives you
+   *  p1 $ p2 |+| p2 $ p1, making sure to swap the results in the second case *)
   
   Definition perm2 t1 t2 (p1: parser t1) (p2: parser t2) : parser (pair_t t1 t2) :=
       p1 $ p2 |+|
       p2 $ p1 @ (fun p => match p with (a, b) => (b, a) %% pair_t t1 t2 end).
 
-  (* Then I build that up into a perm3 and perm4. One could make a recursive
-     function to do this, but I didn't want to bother with the necessary
-     proofs and type-system juggling.*) 
+  (** Then I build that up into a perm3 and perm4. One could make a recursive
+   *  function to do this, but I didn't want to bother with the necessary
+   *  proofs and type-system juggling.*) 
 
   Definition perm3 t1 t2 t3 (p1: parser t1) (p2: parser t2) (p3: parser t3)
     : parser (pair_t t1 (pair_t t2 t3)) :=
@@ -1019,18 +1019,18 @@ Module X86_PARSER.
    |+| p4 $ (perm3 p1 p2 p3) @ 
          (fun p => match p with (d, (a, (b, c))) => (a, (b, (c, d))) %% r_t end). 
 
-  (* In this case, prefixes are optional. Before, each of the above
-     parsing rules for the prefixes accepted Eps, and this was how we
-     handled this.  However, if the parsers you join with perm can
-     each accept Eps, then the result is a _highly_ ambiguous parser.
+  (** In this case, prefixes are optional. Before, each of the above
+   *  parsing rules for the prefixes accepted Eps, and this was how we
+   *  handled this.  However, if the parsers you join with perm can
+   *  each accept Eps, then the result is a _highly_ ambiguous parser.
+   *
+   *  Instead we have a different combinator, called option_perm, that 
+   *  handles this without introducing extra ambiguity *)
 
-     Instead we have a different combinator, called option_perm, that 
-     handles this without introducing extra ambiguity *)
-
-  (* This signature is slightly awkward - because there's no result
-     type corresponding to option (and I'm hesitant to add it to
-     Parser at the moment) we can't just have a signature like parser
-     t1 -> parser t2 -> parser (option_t t1) (option_t t2)) *)
+  (** This signature is slightly awkward - because there's no result
+   *  type corresponding to option (and I'm hesitant to add it to
+   *  Parser at the moment) we can't just have a signature like parser
+   *  t1 -> parser t2 -> parser (option_t t1) (option_t t2)) *)
     
   Definition option_perm2 t1 t2 (p1: parser (tipe_t t1)) (p2: parser (tipe_t t2)) 
      : parser (pair_t (option_t t1) (option_t t2)) :=
@@ -1054,8 +1054,8 @@ Module X86_PARSER.
     |+| perm3 p1 p2 p3 @ (fun p => match p with (a, (b, c))
                                     => (Some a, (Some b, Some c)) %%r_t end).
 
-  (* This is beginning to get quite nasty. Someone should write a form for arbitrary
-     n and prove it's correct :) *)
+  (** This is beginning to get quite nasty. Someone should write a form for arbitrary
+   *  n and prove it's correct :) *)
   Definition option_perm4 t1 t2 t3 t4 (p1:parser(tipe_t t1)) (p2: parser(tipe_t t2))
     (p3: parser(tipe_t t3)) (p4: parser(tipe_t t4)) :
       parser(pair_t(option_t t1) (pair_t(option_t t2) (pair_t(option_t t3) (option_t t4))))

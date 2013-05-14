@@ -1,16 +1,17 @@
-(* Copyright (c) 2011. Greg Morrisett, Gang Tan, Joseph Tassarotti, 
-   Jean-Baptiste Tristan, and Edward Gan.
+(** Copyright (c) 2011. Greg Morrisett, Gang Tan, Joseph Tassarotti, 
+ *  Jean-Baptiste Tristan, and Edward Gan.
+ *
+ *  This file is part of RockSalt.
+ *
+ *  This file is free software; you can redistribute it and/or
+ *  modify it under the terms of the GNU General Public License as
+ *  published by the Free Software Foundation; either version 2 of
+ *  the License, or (at your option) any later version.
+ *)
 
-   This file is part of RockSalt.
 
-   This file is free software; you can redistribute it and/or
-   modify it under the terms of the GNU General Public License as
-   published by the Free Software Foundation; either version 2 of
-   the License, or (at your option) any later version.
-*)
+(** Properties about the DFAs that we build for the ReinsVerifier. *)
 
-(** Properties about the DFAs that we build for the ReinsVerifier.
-*)
 Require Import Coqlib.
 Require Import Parser.
 Require Import Ascii.
@@ -42,9 +43,9 @@ Ltac t := repeat
   end.
 
 (** Inversion lemmas for parsers -- needed because of the dependencies
-    (i.e., inversion will fail as a tactic on most of these because it
-    can't solve a unification problem.)  These really belong in the 
-    Parser library. *)
+ *  (i.e., inversion will fail as a tactic on most of these because it
+ *  can't solve a unification problem.)  These really belong in the 
+ *  Parser library. *)
 Lemma inv_any_pi : forall cs v, in_parser Any_p cs v -> cs = v::nil.
   intros. inversion H. t. subst.  auto.
 Qed.
@@ -124,7 +125,7 @@ Proof.
 Qed.
 
 (** These next few lemmas are used to invert parsers so that we can
-    figure out what kinds of values they build. *)
+ *  figure out what kinds of values they build. *)
 Lemma in_app_alts : forall t (ps1 ps2:list (parser t)) s v,
   in_parser (alts (ps1 ++ ps2)) s v -> 
   in_parser (alts ps1) s v \/ in_parser (alts ps2) s v.
@@ -180,7 +181,7 @@ Proof.
 Qed.
 
 (** A tactic for applying these inversion properties on parsers to simplify
-    them down to the cases we want to consider. *)
+ *  them down to the cases we want to consider. *)
 Ltac psimp := 
   simpl in * ;
   match goal with 
@@ -196,8 +197,8 @@ Ltac psimp :=
   end.
 
 (** Main connecton between non_cflow_dfa and semantics -- this is hopefully
-    close enough to the actual parser used in the semantics that proving
-    a relationship is easy to do.  We will see... *)
+ *  close enough to the actual parser used in the semantics that proving
+ *  a relationship is easy to do.  We will see... *)
 Fixpoint simple_parse' (ps:X86_PARSER.instParserState) (bytes:list int8) : 
   option ((prefix * instr) * list int8) := 
   match bytes with 
@@ -214,7 +215,7 @@ Definition simple_parse (bytes:list int8) : option ((prefix * instr) * list int8
 Definition byte2token (b: int8) : token_id := Zabs_nat (Word.unsigned b).
 
 (** The [valid_prefix_parser_nooveride] parser only builds a [prefix] that satisfies
-   [only_gs_seg_override]. *)
+ *  [only_gs_seg_override]. *)
 Lemma pfx_nooverride : forall s v, 
   in_parser valid_prefix_parser_nooverride s v -> only_gs_seg_override v = true.
 Proof.
@@ -251,9 +252,9 @@ Proof.
 Qed.
 
 (** This lemma shows that any instruction returned by the [non_cflow_parser]
-    satisfies the boolean predicate [non_cflow_instr].  We should probably
-    break this up into a lot of little lemmas to make it a little easier
-    to adapt. *)
+ *  satisfies the boolean predicate [non_cflow_instr].  We should probably
+ *  break this up into a lot of little lemmas to make it a little easier
+ *  to adapt. *)
 Lemma non_cflow_instr_inv (pre:prefix) (ins:instr) (s:list char_p) :
   in_parser ReinsVerifierDFA.non_cflow_parser s (pre,ins) -> 
   non_cflow_instr pre ins = true.
@@ -595,7 +596,7 @@ Proof.
 Qed.
 
 (** The [valid_prefix_parser_nooverride] parser used in the DFA is a subset of the 
-    [prefix_parser_nooverride] parser used in the semantics. *)
+ *  [prefix_parser_nooverride] parser used in the semantics. *)
 Lemma prefix_subset : 
   forall s v, in_parser valid_prefix_parser_nooverride s v -> 
     in_parser prefix_parser_nooverride s v.
@@ -629,7 +630,7 @@ Proof.
 Qed.
 
 (** All parsers in [non_cflow_instrs_nosize_pre] are also in 
-    [instr_parsers_nosize_pre]. *)
+ *  [instr_parsers_nosize_pre]. *)
 Lemma ncflow_is_subset : 
   forall p, In p non_cflow_instrs_nosize_pre -> 
     In p instr_parsers_nosize_pre.
@@ -640,8 +641,8 @@ Proof.
 Qed.
 
 (** This shows that if a string matches the [non_cflow_parser], then it 
-    will also match the [instruction_parser].  It's half of what we need
-    to establish the correctness of the [non_cflow] DFA. *)
+ *  will also match the [instruction_parser].  It's half of what we need
+ *  to establish the correctness of the [non_cflow] DFA. *)
 Lemma non_cflow_parser_subset : 
   forall s v, in_parser non_cflow_parser s v -> 
     in_parser instruction_parser s v.
@@ -712,7 +713,7 @@ Proof.
 Qed.
 
 (** These abstraction shananigans are necessary to keep Coq from
-    trying to actually build the DFA from within Coq. *)
+ *  trying to actually build the DFA from within Coq. *)
 Module Type ABSTRACT_MAKE_DFA_SIG.
   Parameter abstract_build_dfa : 
     nat -> (token_id -> list char_p) -> nat -> regexp unit_t -> option DFA.
@@ -727,12 +728,12 @@ End ABSTRACT_MAKE_DFA.
 Import ABSTRACT_MAKE_DFA.
 
 (** This lemma tells that that the DFA build from the [non_cflow_parser],
-    when run on an input string of bytes [bytes] and produces [Some(n,nats2)],
-    implies that there exists some prefix of bytes, [bytes1] (of length [n]) 
-    such that both the [non_cflow_parser] and the [instruction_parser], accept
-    [bytes1] and produce the same value.  Furthermore, there is no smaller
-    prefix of [bytes] that the [non_cflow_parser] will accept. Also,
-*)
+ *  when run on an input string of bytes [bytes] and produces [Some(n,nats2)],
+ *  implies that there exists some prefix of bytes, [bytes1] (of length [n]) 
+ *  such that both the [non_cflow_parser] and the [instruction_parser], accept
+ *  [bytes1] and produce the same value.  Furthermore, there is no smaller
+ *  prefix of [bytes] that the [non_cflow_parser] will accept. Also,
+ *)
 Lemma non_cflow_dfa_corr1 :
   forall (d:DFA), 
     abstract_build_dfa 256 nat2bools 400 (par2rec non_cflow_parser) = Some d -> 
@@ -773,23 +774,23 @@ Proof.
 Qed.
 
 (** In what follows, we need to prove that if the instruction parser
-    accepts a string [s] and produces a value [v], then [v] is the 
-    only value associated with [s].  That is, the instruction parser
-    denotes a partial function from strings to values (i.e., is deterministic.)
-    To prove this, we already have that each of the parsers is disjoint
-    (i.e., accept different subsets of strings.)  Now all we need to 
-    do is establish that all of the parsers are deterministic. 
-
-    A brute force approach (exploding the parsers into a disjunctive
-    normal form, and checking all of the paths) does not scale well
-    enough.  So we instead prove that the individual parsers, without
-    the prefixes on them, are deterministic, and then show that if
-    you add the prefixes on, they remain deterministic.  
-*)
+ *  accepts a string [s] and produces a value [v], then [v] is the 
+ *  only value associated with [s].  That is, the instruction parser
+ *  denotes a partial function from strings to values (i.e., is deterministic.)
+ *  To prove this, we already have that each of the parsers is disjoint
+ *  (i.e., accept different subsets of strings.)  Now all we need to 
+ *  do is establish that all of the parsers are deterministic. 
+ *
+ *  A brute force approach (exploding the parsers into a disjunctive
+ *  normal form, and checking all of the paths) does not scale well
+ *  enough.  So we instead prove that the individual parsers, without
+ *  the prefixes on them, are deterministic, and then show that if
+ *  you add the prefixes on, they remain deterministic.  
+ *)
 
 (** Simple determ holds when a parser doesn't contain [Star_p] nor any 
-    [Alt_p].  We can show that these parsers produce at most one value
-    (i.e., are deterministic.)  *)
+ *  [Alt_p].  We can show that these parsers produce at most one value
+ *  (i.e., are deterministic.)  *)
 Fixpoint simple_determ t (p:parser t) : bool := 
   match p with 
     | Any_p => true
@@ -837,7 +838,7 @@ Proof.
 Qed.
 
 (** We are going to calculate the DNF for the prefixes.  But we can only
-    do this for parsers that don't contain [Star_p]. *)
+ *  do this for parsers that don't contain [Star_p]. *)
 Fixpoint star_free t (p:parser t) : bool := 
   match p with 
     | Star_p _ _ => false
@@ -848,7 +849,7 @@ Fixpoint star_free t (p:parser t) : bool :=
   end.
 
 (** Disjunctive normal-form for parsers.  This is not well-defined when 
-    the parser includes [Star_p]. *)
+ *  the parser includes [Star_p]. *)
 Fixpoint dnf t (p:parser t) : list (parser t) := 
   match p with 
     | Alt_p t p1 p2 => (dnf p1) ++ (dnf p2)
@@ -861,8 +862,8 @@ Fixpoint dnf t (p:parser t) : list (parser t) :=
 Require Import CheckDeterministic.
 
 (** Check that a parser is determinsistic -- blow it up into its disjunctive
-    normal form, and use [check_all_p] to ensure that there is no string in
-    common. *)
+ *  normal form, and use [check_all_p] to ensure that there is no string in
+ *  common. *)
 Definition check_determ t (p:parser t) : bool := 
   star_free p && check_all_p' 3 (dnf p).
 
@@ -947,9 +948,9 @@ Proof.
 Qed.
 
 (** This ensures that if [p] is deterministic and [s] and [v] are in the 
-   denotation of [p], then there is no prefix of [s] in the domain of the 
-   denotation of [p], and that there is at most one value associated with 
-   [s] in the denotation of [p]. *)
+ *  denotation of [p], then there is no prefix of [s] in the domain of the 
+ *  denotation of [p], and that there is at most one value associated with 
+ *  [s] in the denotation of [p]. *)
 Lemma check_determ_corr' t (p:parser t) : 
   check_determ p = true -> 
   forall s v,
@@ -988,7 +989,7 @@ Proof.
 Qed.
 
 (** Check that all of the instruction parsers (without the prefixes) are 
-    deterministic.  This runs fast enough that we can afford to do this. *)
+ *  deterministic.  This runs fast enough that we can afford to do this. *)
 Lemma all_parsers_determ : 
   check_determ_ps (instr_parsers_opsize_pre ++ instr_parsers_nosize_pre) = true.
 Proof.
@@ -996,8 +997,8 @@ Proof.
 Qed.
 
 (** This checks that when we add a prefix to a parser, that the parser 
-    remains deterministic.  We do so by calculating the DNF of the 
-    prefix, and pre-pending each DNF term to the parser. *)
+ *  remains deterministic.  We do so by calculating the DNF of the 
+ *  prefix, and pre-pending each DNF term to the parser. *)
 Definition check_pfx t1 t2 (p1:parser t1) (p2:parser t2) := 
   check_all_p' 3 (List.map (fun d1 => Cat_p d1 p2) (dnf p1)).
 
@@ -1008,7 +1009,7 @@ Fixpoint check_all_pfx t1 t2 (p1:parser t1) (p2s:list (parser t2)) :=
   end.
 
 (** Check that adding all of the prefixes to the parsers keeps them
-    deterministic. *)
+ *  deterministic. *)
 Lemma check_all_prefixed_instructions : 
   (check_all_pfx prefix_parser_nooverride instr_parsers_nosize_pre) && 
   (check_all_pfx prefix_parser_opsize instr_parsers_opsize_pre) = true.
@@ -1027,10 +1028,10 @@ Proof.
 Qed.
 
 (** This shows that if a we add a [simple_determ] prefix to a deterministic
-    parser, then at most one value is associated with a string [s] in the
-    denotation of the compound parser, and furthermore, there is no prefix
-    of [s] that is in the denotation. This basically handles one of the
-    alternatives of the DNF of a prefix. *)
+ *  parser, then at most one value is associated with a string [s] in the
+ *  denotation of the compound parser, and furthermore, there is no prefix
+ *  of [s] that is in the denotation. This basically handles one of the
+ *  alternatives of the DNF of a prefix. *)
 Lemma simple_pfx_determ' t1 t2 (p1:parser t1) (p2:parser t2) : 
   simple_determ p1 = true -> 
   check_determ p2 = true -> 
@@ -1071,9 +1072,9 @@ Proof.
 Qed.
 
 (** Now show that if [p1] is a star-free prefix, and [p2] is a deterministic
-    parser, then adding [p1] to [p2] yields a parser that is deterministic,
-    and furthermore, if [s] is in the domain of [p1 $ p2], then there is no
-    prefix of [s] that is in the domain of [p1 $ p2]. *)
+ *  parser, then adding [p1] to [p2] yields a parser that is deterministic,
+ *  and furthermore, if [s] is in the domain of [p1 $ p2], then there is no
+ *  prefix of [s] that is in the domain of [p1 $ p2]. *)
 Lemma check_pfx_determ' t1 t2 (p1:parser t1) (p2:parser t2) : 
   star_free p1 = true ->
   check_determ p2 = true -> 
@@ -1124,8 +1125,8 @@ Proof.
 Qed.
 
 (** An intermediate lemma that tells us that when all of the parsers
-    in [p::ps] have been shown to be disjoint, then there is no 
-    string in the domain of both [p] and [ps]. *)
+ *  in [p::ps] have been shown to be disjoint, then there is no 
+ *  string in the domain of both [p] and [ps]. *)
 Lemma check_all_p'_tail t n (p:parser t) (ps:list (parser t)) : 
   check_all_p' n (p::ps) = true -> 
   check_all_p' n ps = true /\ 
@@ -1162,7 +1163,7 @@ Proof.
 Qed.
 
 (** More abstraction stuff to keep Coq from unwininding the definition 
-    of [check_all_p]. *)
+ *  of [check_all_p]. *)
 Module Type ABSTRACT_CHECK_ALL_P_SIG.
   Parameter abstract_check_all_p : nat -> forall t : result, list (parser t) -> bool.
   Parameter abstract_check_all_p_eq : 
@@ -1191,12 +1192,12 @@ Proof.
 Qed.
 
 (** This lemma tells us that if we build a parser from two prefixes
-    and two lists of parsers, such that the prefixes are star-free,
-    and the parsers have been checked to be deterministic, and the
-    concatenation of the prefixes on the parsers don't have any strings
-    in common in their domain, then the resulting mongo parser 
-    is deterministic and furthermore, when [s] and [v] are in its
-    denotation, then there is no prefix of [s] in the denotation. *)
+ *  and two lists of parsers, such that the prefixes are star-free,
+ *  and the parsers have been checked to be deterministic, and the
+ *  concatenation of the prefixes on the parsers don't have any strings
+ *  in common in their domain, then the resulting mongo parser 
+ *  is deterministic and furthermore, when [s] and [v] are in its
+ *  denotation, then there is no prefix of [s] in the denotation. *)
 Lemma parser_determ' t1 t2 m (pfx1 pfx2:parser t1) (ps1 ps2 :list (parser t2)) : 
   star_free pfx1 = true -> 
   star_free pfx2 = true -> 
@@ -1266,11 +1267,11 @@ Proof.
 Qed.
 
 (** A key lemma:  This tells us that the [instruction_parser] is deterministic --
-    i.e., associates at most one value with a given string.  Furthermore, it tells
-    us that if the [instruction_parser] accepts a string [s], then there is no
-    prefix of [s] that is accepted.  This is crucial for showing that a shortest-
-    match strategy (used by both the DFA and the derivative-based parserin the
-    semantics) is complete. *)
+ *  i.e., associates at most one value with a given string.  Furthermore, it tells
+ *  us that if the [instruction_parser] accepts a string [s], then there is no
+ *  prefix of [s] that is accepted.  This is crucial for showing that a shortest-
+ *  match strategy (used by both the DFA and the derivative-based parserin the
+ *  semantics) is complete. *)
 Lemma parser_determ : 
   forall s v1, 
     in_parser instruction_parser s v1 -> 
@@ -1291,18 +1292,18 @@ Proof.
 Qed.
 
 (** Now I want to relate the [simple_parser] to the results above.
-    Note that both the DFA and the simpler parser assume that at
-    least one byte is consumed.  So we have to establish that indeed,
-    the parsers require at least one byte on all paths.  While I'm
-    at it, I calculate the maximum number of bits on any path (but
-    haven't bothered to prove it correct.) *)
+ *  Note that both the DFA and the simpler parser assume that at
+ *  least one byte is consumed.  So we have to establish that indeed,
+ *  the parsers require at least one byte on all paths.  While I'm
+ *  at it, I calculate the maximum number of bits on any path (but
+ *  haven't bothered to prove it correct.) *)
 Require Import Arith.Compare_dec.
 
 Definition max(n1 n2:nat) : nat := if le_lt_dec n1 n2 then n2 else n1.
 Definition min(n1 n2:nat) : nat := if le_lt_dec n1 n2 then n1 else n2.
 
 (** Maximum number of bits consumed by a parser.  Undefined if the
-    parser includes [Star_p]. *)
+ *  parser includes [Star_p]. *)
 Fixpoint max_bit_count t (p:parser t) : option nat := 
   match p with 
     | Eps_p => Some 0
@@ -1348,8 +1349,8 @@ Proof.
 Qed.
 
 (** Minimum number of bits consumed by the parser.  This is undefined
-    when the parser is [Zero_p].  Or rather, we use [None] to represent
-    "minimum infinity" to get this to work out properly. *)
+ *  when the parser is [Zero_p].  Or rather, we use [None] to represent
+ *  "minimum infinity" to get this to work out properly. *)
 Fixpoint min_bit_count t (p:parser t) : option nat := 
   match p with 
     | Eps_p => Some 0
@@ -1398,8 +1399,8 @@ Proof.
 Qed.
 
 (** Probably goes in the Parser file.  In fact, this whole file would be
-    much simpler if I could just calculate derivatives directly on parsers,
-    instead of having to convert them to regexps.  *)
+ *  much simpler if I could just calculate derivatives directly on parsers,
+ *  instead of having to convert them to regexps.  *)
 Lemma in_derivs_app t (x1 x2:list char_p) (c:ctxt_t) (r:regexp t) (v:result_m t): 
   wf_regexp c r -> 
   in_regexp c (deriv_parse' (deriv_parse' r x1) x2) nil v -> 
@@ -1411,7 +1412,7 @@ Proof.
 Qed.  
 
 (** If [apply_null] on [derivs p cs] is [nil], then there's no value associated
-   with [cs] in the denotation of [p]. *)
+ *  with [cs] in the denotation of [p]. *)
 Lemma apply_null_nil : 
   forall (c:ctxt_t) t (p:parser t) (r:regexp t) cs,
     c = snd (parser2regexp p) ->
@@ -1438,8 +1439,8 @@ Proof.
 Qed.
 
 (** Awkwardness reasoning with dependent types.  Again, this would be
-    much simpler if we didn't have to factor things through the translation
-    of regexps (as then we wouldn't need the well-formedness proofs around.) *)
+ *  much simpler if we didn't have to factor things through the translation
+ *  of regexps (as then we wouldn't need the well-formedness proofs around.) *)
 Lemma apply_null_app cs1 cs2 t (r:regexp t) (c:ctxt_t) (H:wf_regexp c r) :
   apply_null c (deriv_parse' r (cs1 ++ cs2)) (wf_derivs c (cs1 ++ cs2) 
     r H) = 
@@ -1478,22 +1479,22 @@ Proof.
 Qed.
 
 (** This lemma establishes a relationship between a parser [p] and the
-    execution of the [simple_parse'] loop.  In particular, if we are
-    in the loop processing [derivs p bytes1] and trying to process [bytes2],
-    and we've already shown that there is no string [s1] that is a prefix of
-    [bytes1] such that [apply_null] succeeds on [derivs p s1], then if we
-    run [simple_parse'] on bytes2, then:
-    (a) if it returns [None], then there is no prefix of [bytes1 ++ bytes2]
-    accepted by [p].
-    (b) if it returns [Some(n,bytes3)], then there is some prefix of [bytes2],
-    say [bytes4], such that [apply_null] returns a value when we calculate
-    [derivs p (bytes1 ++ bytes4)].  Furthermore, there is no smaller string
-    than [bytes4] that has this property. 
-
-    This proof is really, really ugly and the whole thing needs to be
-    re-thought and refactored to make this at all maintainable.  But hey,
-    it works.  
-*)
+ *  execution of the [simple_parse'] loop.  In particular, if we are
+ *  in the loop processing [derivs p bytes1] and trying to process [bytes2],
+ *  and we've already shown that there is no string [s1] that is a prefix of
+ *  [bytes1] such that [apply_null] succeeds on [derivs p s1], then if we
+ *  run [simple_parse'] on bytes2, then:
+ *  (a) if it returns [None], then there is no prefix of [bytes1 ++ bytes2]
+ *  accepted by [p].
+ *  (b) if it returns [Some(n,bytes3)], then there is some prefix of [bytes2],
+ *  say [bytes4], such that [apply_null] returns a value when we calculate
+ *  [derivs p (bytes1 ++ bytes4)].  Furthermore, there is no smaller string
+ *  than [bytes4] that has this property. 
+ *
+ *  This proof is really, really ugly and the whole thing needs to be
+ *  re-thought and refactored to make this at all maintainable.  But hey,
+ *  it works.  
+ *)
 Lemma simple_parse'_corr2 : 
   forall p bytes2 ps bytes1,
   inst_ctxt ps = (snd (parser2regexp p)) -> 
@@ -1612,7 +1613,7 @@ Proof.
 Qed.
 
 (** If the [min_bit_count] of [p] is greater than 0, then there's no 
-    way that [apply_null] will succeed. *)
+ *  way that [apply_null] will succeed. *)
 Lemma min_count_not_null : 
   forall n t (p:parser t),
     min_bit_count p = Some (S n) -> 
@@ -1629,15 +1630,15 @@ Proof.
 Qed.
 
 (** Finally, the connection that directly ties execution of the DFA for
-    the [non_cflow] parser to the [simple_parse] above.  This says that
-    if we build the DFA, and run [dfa_recognize] on [bytes] and it 
-    returns [Some (n,nats2)], then if we run [simple_parse] on [bytes],
-    we'll consume the same number of bytes and get a prefix and instruction
-    that satisfy [non_cflow_instr]. *)
+ *  the [non_cflow] parser to the [simple_parse] above.  This says that
+ *  if we build the DFA, and run [dfa_recognize] on [bytes] and it 
+ *  returns [Some (n,nats2)], then if we run [simple_parse] on [bytes],
+ *  we'll consume the same number of bytes and get a prefix and instruction
+ *  that satisfy [non_cflow_instr]. *)
 Lemma non_cflow_dfa_corr : 
   forall (d:DFA), 
-    (* I want to use [make_dfa] here but alas, Coq tries to evaluate it at the Qed,
-       even when I immediately rewrite it to use abstract_build_dfa. *)
+    (** I want to use [make_dfa] here but alas, Coq tries to evaluate it at the Qed,
+     *  even when I immediately rewrite it to use abstract_build_dfa. *)
     abstract_build_dfa 256 nat2bools 400 (par2rec non_cflow_parser) = Some d -> 
     forall (bytes:list int8) (n:nat) (nats2:list nat),
       dfa_recognize 256 d (List.map byte2token bytes) = Some (n, nats2) -> 
@@ -1771,7 +1772,7 @@ Qed.
 (*********************************************************)
 
 (** Show that the instruction we get out of the [dir_cflow] parsers satisfies
-    the [dir_cflow_instr] predicate. *)
+ *  the [dir_cflow_instr] predicate. *)
 Lemma dir_cflow_instr_inv (ins:instr) (s:list char_p) : 
   in_parser (alts dir_cflow) s ins -> 
   dir_cflow_instr (mkPrefix None None false false) ins = true.
@@ -1817,11 +1818,11 @@ Proof.
   unfold never in *. pinv.
 Qed.
 
-(* FIX:  this is exactly the same proof as for [non_cflow_dfa_corr1] 
-   except that we use [alts dir_cflow] instead of the non-control-flow
-   parser, we use [dir_cflow_instr] instead of the non-control-flow
-   predicate, and we use [dir_cflow_parser_subset] instead of the
-   non-control-flow one. *)
+(** FIX:  this is exactly the same proof as for [non_cflow_dfa_corr1] 
+ *  except that we use [alts dir_cflow] instead of the non-control-flow
+ *  parser, we use [dir_cflow_instr] instead of the non-control-flow
+ *  predicate, and we use [dir_cflow_parser_subset] instead of the
+ *  non-control-flow one. *)
 Lemma dir_cflow_dfa_corr1 : 
   forall (d:DFA),
     abstract_build_dfa 256 nat2bools 400 (par2rec (alts dir_cflow)) = Some d -> 
@@ -1861,10 +1862,10 @@ Proof.
   rewrite <- H12 in H11.  auto.
 Qed.
 
-(* FIX: this is exactly the same proof as for the non-control-flow DFA
-   except that well, we use [alts dir_cflow] and [dir_cflow_dfa_corr1].
-   So we should be able to abstract over these but I'm too lazy to do
-   this right now. *)
+(** FIX: this is exactly the same proof as for the non-control-flow DFA
+ *  except that well, we use [alts dir_cflow] and [dir_cflow_dfa_corr1].
+ *  So we should be able to abstract over these but I'm too lazy to do
+ *  this right now. *)
 Lemma dir_cflow_dfa_corr : 
   forall (d:DFA),
     abstract_build_dfa 256 nat2bools 400 (par2rec (alts dir_cflow)) = Some d -> 
@@ -1936,9 +1937,9 @@ Proof.
   auto.
 Qed.
 
-(* This is really the same as the above proof about non_cflow_dfa... but 
-   since a bunch of the other proof here need to be refactored at some point,
-   I'm not terribly worried. *)
+(** This is really the same as the above proof about non_cflow_dfa... but 
+ *  since a bunch of the other proof here need to be refactored at some point,
+ *  I'm not terribly worried. *)
 
 Lemma dir_cflow_dfa_length : 
   forall (d:DFA), 

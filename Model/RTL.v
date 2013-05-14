@@ -1,13 +1,13 @@
-(* Copyright (c) 2011. Greg Morrisett, Gang Tan, Joseph Tassarotti, 
-   Jean-Baptiste Tristan, and Edward Gan.
-
-   This file is part of RockSalt.
-
-   This file is free software; you can redistribute it and/or
-   modify it under the terms of the GNU General Public License as
-   published by the Free Software Foundation; either version 2 of
-   the License, or (at your option) any later version.
-*)
+(** Copyright (c) 2011. Greg Morrisett, Gang Tan, Joseph Tassarotti, 
+ *  Jean-Baptiste Tristan, and Edward Gan.
+ *
+ *  This file is part of RockSalt.
+ *
+ *  This file is free software; you can redistribute it and/or
+ *  modify it under the terms of the GNU General Public License as
+ *  published by the Free Software Foundation; either version 2 of
+ *  the License, or (at your option) any later version.
+ *)
 
 Require Import List.
 Require Import Bits.
@@ -30,12 +30,12 @@ Definition wint n := Word.wint n.
 
 Module Type MACHINE_SIG.
   (** We abstract over locations which include things like registers, flags, the pc, 
-      segment registers, etc.  Our only assumption is that updates to distinct locations
-      commute. *)
+   *  segment registers, etc.  Our only assumption is that updates to distinct locations
+   *  commute. *)
   Variable location : nat -> Set.  (* registers, flags, etc. *)
 
   (** We also abstract over the size of memory, by parameterizing the RTLs over the
-      number of bits in addresses. *)
+   *  number of bits in addresses. *)
   Variable size_addr : nat.  (* number of bits in a memory adress minus one *)
 
   (** We assume some type for the machine state *)
@@ -64,13 +64,13 @@ Module RTL(M : MACHINE_SIG).
   Module AddrMap := IMap(AddrIndexed).
 
   (** RTL instructions form a RISC-like core language that operate over pseudo-registers.
-      We assume that we're working under an environment that holds an infinite number of
-      pseudo registers for each bit-vector size of interest.  The instructions include
-      arithmetic operations over bitvectors, test instructions, a primitive conditional
-      instruction, signed and unsigned conversions of bitvectors from one size to another,
-      the ability to read/write locations in the machine state, the ability to read/write
-      locations in memory, the ability to non-deterministically choose a bit-vector, 
-      and an error. *)
+   *  We assume that we're working under an environment that holds an infinite number of
+   *  pseudo registers for each bit-vector size of interest.  The instructions include
+   *  arithmetic operations over bitvectors, test instructions, a primitive conditional
+   *  instruction, signed and unsigned conversions of bitvectors from one size to another,
+   *  the ability to read/write locations in the machine state, the ability to read/write
+   *  locations in memory, the ability to non-deterministically choose a bit-vector, 
+   *  and an error. *)
   Inductive bit_vector_op : Set := 
     add_op | sub_op | mul_op | divs_op | divu_op | modu_op | mods_op
   | and_op | or_op | xor_op | shl_op | shr_op | shru_op | ror_op | rol_op.
@@ -96,7 +96,7 @@ Module RTL(M : MACHINE_SIG).
   | safe_fail_rtl : rtl_instr.
 
   (** Next, we give meaning to RTL instructions as transformers over an
-      environment for pseudo-registers and a machine state. *)
+   *  environment for pseudo-registers and a machine state. *)
   Definition pseudo_env := forall s, pseudo_reg s -> wint s.
   Definition empty_env : pseudo_env := fun s _ => Word.zero.
   Definition eq_pseudo_reg s : forall (r1 r2:pseudo_reg s), {r1 = r2} + {r1 <> r2}.
@@ -238,7 +238,7 @@ Module RTL(M : MACHINE_SIG).
     end.
 
   (** We collect all of the information for an instruction into a record
-      satisfying this interface. *)
+   *  satisfying this interface. *)
   Record instruction := { 
     instr_assembly : string ;  (* for printing/debugging *)
     instr_rtl : list rtl_instr (* semantics as RTL instructions *)

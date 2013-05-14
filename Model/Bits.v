@@ -45,8 +45,6 @@
  * MCP: This file has been addapted, as specified below, to verify 
  *      REINS rewritten binaries.  
  *  
- *	Changes		- "int" -> "wint"
- *		
  *	Additions 	- Lemma bits_of_Z_one
  *				- Lemma low_bits_zero_even
  *				- Definition high_bits_zero 

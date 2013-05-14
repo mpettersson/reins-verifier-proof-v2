@@ -29,8 +29,7 @@
  *  MCP: This file has been adopted, as specified below, to verify 
  *       REINS rewritten binaries.
  *
- *	Changed - "int" to "wint"
- *			- Definition logChunkSize
+ *	Changed - Definition logChunkSize
  *			- Definition safeMask
  *			- Definition reinsjmp_nonIAT_mask_instr
  *

@@ -41,7 +41,8 @@
 
  (**MCP: This file has been addapted, as specified below, to verify REINS
  *      rewritten binaries.
- *
+ *  
+ *  (It's easier to list what remained the same from RockSalt to REINS)
  *  NOT Changed	- Definition n_shift_add
  *		        - Fixpoint n_of_bits
  *		        - Definition byte2token
@@ -450,4 +451,4 @@ Definition checkProgram' (data : list (list int8)) : (bool * Int32Set.t) :=
       reinsjmp_IAT_CALL_p
       data.
 
-(* Extraction "reinsverif.ml" checkProgram'. *)
+Extraction "reinsverif.ml" checkProgram'.

@@ -1,13 +1,13 @@
-(* Copyright (c) 2011. Greg Morrisett, Gang Tan, Joseph Tassarotti, 
-   Jean-Baptiste Tristan, and Edward Gan.
-
-   This file is part of RockSalt.
-
-   This file is free software; you can redistribute it and/or
-   modify it under the terms of the GNU General Public License as
-   published by the Free Software Foundation; either version 2 of
-   the License, or (at your option) any later version.
-*)
+(** Copyright (c) 2011. Greg Morrisett, Gang Tan, Joseph Tassarotti, 
+ *  Jean-Baptiste Tristan, and Edward Gan.
+ *
+ *  This file is part of RockSalt.
+ *
+ *  This file is free software; you can redistribute it and/or
+ *  modify it under the terms of the GNU General Public License as
+ *  published by the Free Software Foundation; either version 2 of
+ *  the License, or (at your option) any later version.
+ *)
 
 
 Require Import Tacs.
@@ -20,7 +20,7 @@ Export Word.
 
 Local Open Scope Z_scope.
 
-(** * Data structures *)
+(** Data structures *)
 Require Coq.Sets.Ensembles.
 Definition Int32Ensemble := Ensembles.Ensemble int32.
 Definition w32add := @Word.add 31.
@@ -28,7 +28,7 @@ Definition w32sub := @Word.sub 31.
 Definition w32neg := @Word.neg 31.
 Notation w32modulus := (modulus 31).
 
-(** * Abbreviations *)
+(** Abbreviations *)
 Infix "+32" := w32add (at level 50, left associativity).
 Notation "i +32_z z" := (i +32 (repr z))
   (at level 50, left associativity).
@@ -65,7 +65,7 @@ Notation "i1 <=32 i2" := (int32_lequ_bool i1 i2 = true) (at level 70).
 Notation "i1 >32 i2" := (int32_gtu_bool i1 i2 = true) (at level 70).
 Notation "i1 >=32 i2" := (int32_gequ_bool i1 i2 = true) (at level 70).
 
-(** * Basic lemmas *)
+(** Basic lemmas *)
 
 Lemma add32_zero_r : forall i, i +32_n 0 = i.
 Proof. simpl. apply add_zero. Qed.
@@ -111,7 +111,7 @@ Proof. intros x y Hc.
   rewrite Zmod_0_l. trivial.
 Qed.
 
-(** ** Tactics for int32 *)
+(** Tactics for int32 *)
 
 (** Convert operations on int32 to operations on Z *)
 
@@ -147,16 +147,16 @@ Hint Rewrite inj_S2 : nat_to_Z.
 Hint Rewrite inj_Zabs_nat : nat_to_Z.
 Hint Rewrite Zabs_eq using omega: nat_to_Z.
 
-(* Converting hypothesis about nats to Z:
-     * n1 = n2 ===> Z_of_nat n1 = Z_of_nat n2
-     * n1 > n2 ===> Z_of_nat n1 > Z_of_nat n2
-     * ...  
-   This would not be necessary if we used omega instead of lia.
-   Since lia cannot mix facts of Z and nat, we have to
-   convert every equality and inquality between nat to Z;
-   we also have to add hypothesis (Z_of_nat n >=0) for every
-   nat n.
-*)
+(** Converting hypothesis about nats to Z:
+ *    * n1 = n2 ===> Z_of_nat n1 = Z_of_nat n2
+ *    * n1 > n2 ===> Z_of_nat n1 > Z_of_nat n2
+ *    * ...  
+ *  This would not be necessary if we used omega instead of lia.
+ *  Since lia cannot mix facts of Z and nat, we have to
+ *  convert every equality and inquality between nat to Z;
+ *  we also have to add hypothesis (Z_of_nat n >=0) for every
+ *  nat n.
+ *)
 Ltac nat_hyp_to_Z_tac :=
   repeat match goal with
            | [H : ?X = ?Y |- _] =>
@@ -171,8 +171,8 @@ Ltac nat_hyp_to_Z_tac :=
            | [n: nat |- _] => extend (Zle_0_nat n)
          end.
 
-(* need to repeat autorewrite below because rewritng rules such as inj_minus1 might
-   depend on the results of other rewriting rules so that omega will succeed *)
+(** need to repeat autorewrite below because rewritng rules such as inj_minus1 might
+ *  depend on the results of other rewriting rules so that omega will succeed *)
 Ltac nat_to_Z_tac :=  nat_hyp_to_Z_tac; repeat autorewrite with nat_to_Z in *.
 Ltac nat_to_Z_in_goal :=  autorewrite with nat_to_Z.
 Ltac nat_to_Z_in H :=  autorewrite with nat_to_Z in H.
@@ -185,7 +185,7 @@ Hint Rewrite <- Z_of_nat_0 Z_of_nat_1 : Z_to_nat.
 Ltac Z_to_nat_in_goal := autorewrite with Z_to_nat.
 Ltac Z_to_nat_in H := autorewrite with Z_to_nat in H.
   
-(** * Definition and properties of noOverflow *)
+(** Definition and properties of noOverflow *)
 Definition addZ_list (l:list int32) : Z := 
   List.fold_right (fun (a:int32) (z:Z) => unsigned a + z) 0 l.
 
@@ -198,12 +198,12 @@ Ltac noOverflow_simpl_in H :=
   unfold noOverflow in H; cbv [addZ_list List.fold_right] in H.
 
 (** Check a +32 b does not overflow; it is equivalent to a + b < 2^32 
-    and also equivalent to a +32 b = a + b; this formulation is easy to 
-    convert to checks in real programs. *)
+ *  and also equivalent to a +32 b = a + b; this formulation is easy to 
+ *  convert to checks in real programs. *)
 Definition checkNoOverflow (a b:int32) : bool :=
   int32_lequ_bool a (a +32 b).
 
-(** ** Properties of noOverflow *)
+(** Properties of noOverflow *)
 Lemma checkNoOverflow_equiv_noOverflow : forall a b,
   checkNoOverflow a b = true <-> noOverflow (a :: b :: nil).
 Proof. intros; generalize (unsigned_range a), (unsigned_range b); 
@@ -241,7 +241,7 @@ Proof. intros. unfold "+32", repr. simpl.
   rewrite Zmod_small by omega. trivial.
 Qed.
 
-(** ** Tactics for noOverflow *)
+(** Tactics for noOverflow *)
 
 (** Eliminate checkNoOverflow *)
 Ltac checkNoOverflow_elim :=
@@ -252,8 +252,8 @@ Ltac checkNoOverflow_elim :=
              apply checkNoOverflow_equiv_noOverflow
          end.
 
-(* For any occurence of "unsigned x" in the context, add the 
-   assumption (0 <= unsigned x < 2^32)*)
+(** For any occurence of "unsigned x" in the context, add the 
+ *  assumption (0 <= unsigned x < 2^32)*)
 Ltac add_unsigned_rng_tac :=
   repeat match goal with
            | [H:context[unsigned ?X] |- _] =>
@@ -283,21 +283,21 @@ Ltac int32_simplify_in H :=
   nat_to_Z_in H; autorewrite with int32_simpl_db in H.
 
 (** A rewrite tactic that
-    (1) rewrites to (unsigned a + unsigned b) when
-        (unsigned a + unsigned b < 2^32 holds
-    (3) rewrites unsigned (repr z) to z when 0 <= z < 2^32 *)
+ *  (1) rewrites to (unsigned a + unsigned b) when
+ *      (unsigned a + unsigned b < 2^32 holds
+ *  (3) rewrites unsigned (repr z) to z when 0 <= z < 2^32 *)
 Hint Rewrite int32_add_rewrite using (omega || (int32_simplify_in_goal; omega))
   : int32_simpl_db.
 Hint Rewrite int32_minus_rewrite using omega : int32_simpl_db.
 Hint Rewrite Word.unsigned_repr2 using omega : int32_simpl_db.
 
-(** ** More lemmas about noOverflow *)
+(** More lemmas about noOverflow *)
 Lemma checkNoOverflow_3_sound : forall (a b c:int32),
   checkNoOverflow a b = true -> checkNoOverflow (a +32 b) c = true
     -> noOverflow (a::b::c::nil).
 Proof. intros. checkNoOverflow_elim. int32_prover. Qed.
 
-(** * addrRegion *)
+(** addrRegion *)
 
 Definition addrRegion (start limit:int32):Int32Ensemble :=
   fun x:int32 => exists i:int32, x = start +32 i /\ i <=32 limit.
@@ -311,10 +311,11 @@ Proof. autounfold with sets. intros.
   apply Word.int_lequ_zero.
 Qed.
 
-(** * disjointRegions *)
+(** disjointRegions *)
+
 (** Check region [start1, start1+limit1] is disjoint from 
-    [start2, start2+limit2]; For simplicity, neither region can wrap
-    around the 32-bit address space. *)
+ *  [start2, start2+limit2]; For simplicity, neither region can wrap
+ *  around the 32-bit address space. *)
 Definition disjointRegions (start1 limit1 start2 limit2:int32) : bool :=
   (int32_ltu_bool (start1 +32 limit1) start2 ||
    int32_ltu_bool (start2 +32 limit2) start1)%bool.
@@ -333,8 +334,8 @@ Proof. intros. split; intros. autounfold with sets. intro Hc.
   bool_elim_tac; int32_prover.
 Qed.
 
-(** * Some properties about ensembles *)
-(* not sure where to put these lemmas *)
+(** Some properties about ensembles *)
+(*  not sure where to put these lemmas *)
 Lemma included_disjoint : forall A r1 r2 r3,
   Ensembles.Included A r1 r2 -> Ensembles.Disjoint A r2 r3
     -> Ensembles.Disjoint A r1 r3.

@@ -1,13 +1,13 @@
-(* Copyright (c) 2011. Greg Morrisett, Gang Tan, Joseph Tassarotti, 
-   Jean-Baptiste Tristan, and Edward Gan.
-
-   This file is part of RockSalt.
-
-   This file is free software; you can redistribute it and/or
-   modify it under the terms of the GNU General Public License as
-   published by the Free Software Foundation; either version 2 of
-   the License, or (at your option) any later version.
-*)
+(** Copyright (c) 2011. Greg Morrisett, Gang Tan, Joseph Tassarotti, 
+ *  Jean-Baptiste Tristan, and Edward Gan.
+ *
+ *  This file is part of RockSalt.
+ *
+ *  This file is free software; you can redistribute it and/or
+ *  modify it under the terms of the GNU General Public License as
+ *  published by the Free Software Foundation; either version 2 of
+ *  the License, or (at your option) any later version.
+ *)
 
 Require Bool.
 Require Import ZArith.
@@ -63,7 +63,7 @@ Tactic Notation "destruct_head" "in" ident(H) :=
     end.
 
 (** Similar to remember, but instead of generating "id=term", generate
-    "term=id" instead *)
+ *  "term=id" instead *)
 Tactic Notation "remember_rev" constr(E) "as" ident(X) :=
   set (X := E) in *; 
   let HX := fresh "H" X in assert (HX : E = X) by reflexivity; clearbody X.
@@ -116,8 +116,8 @@ Ltac clear_dup :=
   end.
 Ltac clear_dups := repeat clear_dup.
 
-(* Find two variables of the same type; prove their equivalence; 
-   then do a subst *)
+(** Find two variables of the same type; prove their equivalence; 
+ *  then do a subst *)
 Ltac congruence_subst :=
   match goal with
     | [v1:?tp, v2:?tp |- _] =>
@@ -175,9 +175,9 @@ Ltac genSimpl :=
      | _ => idtac
    end.
 
-(* Note: directly using intuition will result in a slow tactic; since it is
-   equivalent to "intuition auto with *", which means the auto with try lemmas
-   in *all* hint databases *)
+(** Note: directly using intuition will result in a slow tactic; since it is
+ *  equivalent to "intuition auto with *", which means the auto with try lemmas
+ *  in *all* hint databases *)
 
 Ltac simtuition tac:= 
   simpl in *; intuition tac; try subst; 
@@ -200,9 +200,9 @@ Ltac appHyps f :=
     | [ H : _ |- _ ] => f H
   end.
 
-(* Add a lemma and all facts that can be dervied from it to the context;
-   tac is used to prove subgoals when applying the lemma; this tactic performs
-   forward reasoning *)
+(** Add a lemma and all facts that can be dervied from it to the context;
+ *  tac is used to prove subgoals when applying the lemma; this tactic performs
+ *  forward reasoning *)
 Tactic Notation "use_lemma" constr(lm) "by" tactic(tac) :=
   let H := fresh "H" in
     generalize lm; intro H;
@@ -222,8 +222,8 @@ Tactic Notation "use_lemma" constr(lm) "by" tactic(tac) :=
                end
            end.
 
-(* The following tactics are from the book "Software Foundations"
-   by Pierce, Casinghino and Greenberg *)
+(** The following tactics are from the book "Software Foundations"
+ *  by Pierce, Casinghino and Greenberg *)
 
 Require String. Open Scope string_scope.
 

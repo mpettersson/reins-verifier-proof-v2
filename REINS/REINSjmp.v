@@ -32,7 +32,8 @@
 (**
  *	MCP: This file has been addapted, as specified below, to verify REINS
  *	     rewritten binaries. 
- *
+ *  
+ *  (It easier to list what stayed the same between RockSalt and REINS)
  *	NOT Changed	- Lemma byte_explode_bits b
  *				- Lemma split_bytes_n (Proof Changed)
  *				- Lemma byte2token_app xs n1 n2 (Proof Changed)

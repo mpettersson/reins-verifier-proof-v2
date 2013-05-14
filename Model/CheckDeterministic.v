@@ -1,32 +1,32 @@
-(* Copyright (c) 2011. Greg Morrisett, Gang Tan, Joseph Tassarotti, 
-   Jean-Baptiste Tristan, and Edward Gan.
-
-   This file is part of RockSalt.
-
-   This file is free software; you can redistribute it and/or
-   modify it under the terms of the GNU General Public License as
-   published by the Free Software Foundation; either version 2 of
-   the License, or (at your option) any later version.
-*)
+(** Copyright (c) 2011. Greg Morrisett, Gang Tan, Joseph Tassarotti, 
+ *  Jean-Baptiste Tristan, and Edward Gan.
+ *
+ *  This file is part of RockSalt.
+ *
+ *  This file is free software; you can redistribute it and/or
+ *  modify it under the terms of the GNU General Public License as
+ *  published by the Free Software Foundation; either version 2 of
+ *  the License, or (at your option) any later version.
+ *)
 
    
 (** CheckDeterministic.v:  This file provides some routines to help try to
-    prove that parsers are deterministic.  In particular, there's a function
-    [disjoint_p p1 p2] which when it returns true, ensures that there is no
-    string of tokens (i.e., bytes) that is accepted by both [p1] and [p2].
-    This is achieved by computing the intersection of the two [regexps] 
-    corresponding to [p1] and [p2] and trying to show that that intersection
-    is equivalent to [Zero].  
-
-    I coded a new version of regexps, here called [rexp] to avoid conflicts
-    with the definition in [Parser.v], which includes intersection ([And_r]).
-    To determine if an [rexp] is equivalent to [Zero], we (a) check to see
-    if the [rexp] is nullable (if so, then it accepts [nil] so it's not
-    equivalent to [Zero]), and otherwise, calculate the derivative of the
-    [rexp] with respect to each possible input token, and then recursively
-    see if the derivatives are zero.  If all of the derivatives are zero,
-    then the original expression is equivalent to zero.
-*)
+ *  prove that parsers are deterministic.  In particular, there's a function
+ *  [disjoint_p p1 p2] which when it returns true, ensures that there is no
+ *  string of tokens (i.e., bytes) that is accepted by both [p1] and [p2].
+ *  This is achieved by computing the intersection of the two [regexps] 
+ *  corresponding to [p1] and [p2] and trying to show that that intersection
+ *  is equivalent to [Zero].  
+ *
+ *  I coded a new version of regexps, here called [rexp] to avoid conflicts
+ *  with the definition in [Parser.v], which includes intersection ([And_r]).
+ *  To determine if an [rexp] is equivalent to [Zero], we (a) check to see
+ *  if the [rexp] is nullable (if so, then it accepts [nil] so it's not
+ *  equivalent to [Zero]), and otherwise, calculate the derivative of the
+ *  [rexp] with respect to each possible input token, and then recursively
+ *  see if the derivatives are zero.  If all of the derivatives are zero,
+ *  then the original expression is equivalent to zero.
+ *)
 Require Import Coqlib.
 Require Import Parser.
 Require Import Ascii.
@@ -46,8 +46,8 @@ Import X86_PARSER.
 Import X86_BASE_PARSER.
 
 (** Our regular expressions with intersection ([And_r]).  We need
-    the support for intersection to test whether two parsers overlap
-    on strings.  *)
+ *  the support for intersection to test whether two parsers overlap
+ *  on strings.  *)
 Inductive rexp : Type := 
 | Any_r : rexp
 | Char_r : char_p -> rexp
@@ -95,7 +95,7 @@ Ltac s := repeat (mysimp ; subst).
 Lemma cons_app A (x:A) (ys:list A) : x :: ys = (x::nil) ++ ys. auto. Qed.
 
 (** I coded [rexp_eq] explicitly to return a [bool], because this seems
-    to run faster than if we compute a proof of equality. *)
+ *  to run faster than if we compute a proof of equality. *)
 Fixpoint rexp_eq(r1 r2:rexp) : bool := 
   match r1, r2 with 
     | Any_r, Any_r => true
@@ -268,7 +268,7 @@ Qed.
 Hint Resolve null_r_corr2.
 
 (** If [nil] is in the denotation of [null_r r], then it's also in the 
-    denotation of [r]. *)
+ *  denotation of [r]. *)
 Lemma null_r_corr3 r : in_rexp (null_r r) nil -> in_rexp r nil.
 Proof.
   induction r ; repeat in_inv ; 
@@ -365,7 +365,7 @@ Fixpoint parser2rexp t (p:parser t) : rexp :=
   end.
 
 (** If [s] and [v] are in the denotation of [p], then [s] is in the denotation of
-    [parser2rexp p]. *)
+ *  [parser2rexp p]. *)
 Lemma parse2rexp_corr1 t (p:parser t) s v : 
   in_parser p s v -> in_rexp (parser2rexp p) s.
 Proof.
@@ -374,7 +374,7 @@ Proof.
 Qed.
 
 (** If [s] is in the denotation of [parser2rexp p], then there exists some [v],
-    such that [s] and [v] are in the denotation of [p]. *)
+ *  such that [s] and [v] are in the denotation of [p]. *)
 Lemma parse2rexp_corr2 t (p:parser t) s : 
   in_rexp (parser2rexp p) s -> 
     exists v, in_parser p s v.
@@ -397,7 +397,7 @@ Proof.
 Qed.
 
 (** Returns true if [r] accepts the empty string, false otherwise -- it's
-    faster to just compute this directly than to call [null_r]. *)
+ *  faster to just compute this directly than to call [null_r]. *)
 Fixpoint ck_null (r:rexp) : bool := 
   match r with 
     | Eps_r => true
@@ -472,7 +472,7 @@ Proof.
 Qed.
 
 (** A string [c::cs] is in the denotation of [r] iff [cs] is in the 
-    denotation of [deriv_r r c]. *)
+ *  denotation of [deriv_r r c]. *)
 Lemma deriv_r_corr r c cs : in_rexp r (c::cs) <-> in_rexp (deriv_r r c) cs.
 Proof.
   intros ; split ; intros. eapply deriv_r_corr1; eauto. eapply deriv_r_corr2 ; eauto.
@@ -486,7 +486,7 @@ Fixpoint derivs_r (r:rexp) (cs:list char_p) : rexp :=
   end.
 
 (** A string [cs1 ++ cs2] is in the denotation of [r] iff the string [cs2] is
-    in the denotation of [derivs_r r cs1]. *)
+ *  in the denotation of [derivs_r r cs1]. *)
 Lemma derivs_r_corr cs1 r cs2 : in_rexp r (cs1 ++ cs2) <-> in_rexp (derivs_r r cs1) cs2.
 Proof.
   intros ; split ; generalize r cs2 ; clear r cs2 ; induction cs1 ; simpl ; intros ; auto.
@@ -495,8 +495,8 @@ Proof.
 Qed.
 
 (** Specialization of [deriv] for the case where we are going to take the
-    derivative with respect to all characters. This avoids doing a case
-    split on [Any_r] into the characters and provides a big speedup. *)
+ *  derivative with respect to all characters. This avoids doing a case
+ *  split on [Any_r] into the characters and provides a big speedup. *)
 Fixpoint DerivAny (r:rexp) : rexp := 
   match r with 
     | Any_r => Eps_r
@@ -512,11 +512,11 @@ Fixpoint DerivAny (r:rexp) : rexp :=
   end.
 
 (** Calculate the derivative of one [rexp] with respect to another.  This is
-    only meaningful when [r2] is a star-free [rexp] which is why we get an 
-    option out.  As we'll see, we get an over approximation of the set of
-    strings accepted by the derivative of [r1] with respect to the strings
-    in [r2].   This provides a fast test for checking whether an intersection
-    is empty and is in fact sufficient for our needs. *)
+ *  only meaningful when [r2] is a star-free [rexp] which is why we get an 
+ *  option out.  As we'll see, we get an over approximation of the set of
+ *  strings accepted by the derivative of [r1] with respect to the strings
+ *  in [r2].   This provides a fast test for checking whether an intersection
+ *  is empty and is in fact sufficient for our needs. *)
 Fixpoint Deriv (r1:rexp) (r2:rexp) : option rexp := 
   match r2 with 
     | Any_r => Some (DerivAny r1)
@@ -568,7 +568,7 @@ Ltac Dsimp :=
   end.
 
 (** If [c::cs'] is in the denotation of [r] then [cs'] is in the denotation
-    of [DerivAny r]. *)
+ *  of [DerivAny r]. *)
 Lemma DerivAny_corr1 : forall r cs, in_rexp r cs -> 
   forall c cs', cs = c::cs' -> in_rexp (DerivAny r) cs'.
 Proof.
@@ -580,7 +580,7 @@ Proof.
 Qed.
 
 (** If [cs1] is in the denotation of [r2] and [cs1++cs2] is in the denotation of [r1],
-    then [cs2] is in the denotation of [Deriv r1 r2]. *)
+ *  then [cs2] is in the denotation of [Deriv r1 r2]. *)
 Lemma Deriv_corr1 : forall r2 r1 r3, Deriv r1 r2 = Some r3 -> 
   forall cs1 cs2, 
     in_rexp r2 cs1 -> 
@@ -595,7 +595,7 @@ Proof.
 Qed.
 
 (** If [Deriv r1 r2] is [Zero_r], then there is no string in the intersection 
-    of the denotations of [r1] and [r2]. *)
+ *  of the denotations of [r1] and [r2]. *)
 Lemma Deriv_Zero : forall r1 r2, 
   Deriv r1 r2 = Some Zero_r -> 
   ~ (exists cs, in_rexp (And_r r1 r2) cs).
@@ -625,14 +625,14 @@ Definition num_tokens := 256%nat.
 Opaque token_id_to_chars.
 Opaque num_tokens.
 
-(* Check whether [r] is equivalent to [Zero_r].  Note that to check whether
-   [And_r r1 r2] is equivalent to [Zero_r], we take the derivative of [r1]
-   with respect to [r2] and then check whether the resulting [rexp] is 
-   equivalent to [Zero_r].  
-
-   Note that [n] here is used for "fuel" so as long as you find some [n]
-   that returns [true], you know that [r] is equivalent to [Zero_r].
-*)
+(** Check whether [r] is equivalent to [Zero_r].  Note that to check whether
+ *  [And_r r1 r2] is equivalent to [Zero_r], we take the derivative of [r1]
+ *  with respect to [r2] and then check whether the resulting [rexp] is 
+ *  equivalent to [Zero_r].  
+ *
+ *  Note that [n] here is used for "fuel" so as long as you find some [n]
+ *  that returns [true], you know that [r] is equivalent to [Zero_r].
+ *)
 Fixpoint ckzero (n:nat) (r:rexp) : bool := 
   match n with 
     | 0%nat => false
@@ -657,7 +657,7 @@ Fixpoint ckzero (n:nat) (r:rexp) : bool :=
   end.
 
 (** Correctness for [ckzero]:  If [ckzero n r] returns [true] for some [n], then
-    there is no string in the denotation of [r]. *)
+ *  there is no string in the denotation of [r]. *)
 Lemma ckzero_corr n r : ckzero n r = true -> ~(exists s, in_rexp r s).
 Proof.
   induction n ; simpl ; intros ; try congruence ; destruct r ; try congruence ; intro ;
@@ -678,7 +678,7 @@ Proof.
 Qed.
 
 (** Check whether [r1] and [r2] denote disjoint sets of strings -- we simply
-    check whether their intersection is equivalent to [Zero_r]. *)
+ *  check whether their intersection is equivalent to [Zero_r]. *)
 Definition ckdisj_r (n:nat) (r1 r2:rexp) := ckzero n (OptAnd_r r1 r2).
 
 (** Correctness of [ckdisj_r]. *)
@@ -694,8 +694,8 @@ Definition ckdisj_p (n:nat) t (p1:parser t) (p2:parser t) :=
   ckdisj_r n (parser2rexp p1) (parser2rexp p2).
 
 (** Correctness of [ckdisj_p] -- here we see that if [p1] and [p2] are disjoint,
-    then there is no string [s] and values [v1] and [v2], such that [s] and [v1]
-    are in the denotation of [p1], and [s] and [v2] are in the denotation of [p2]. *)
+ *  then there is no string [s] and values [v1] and [v2], such that [s] and [v1]
+ *  are in the denotation of [p1], and [s] and [v2] are in the denotation of [p2]. *)
 Lemma ckdisj_p_corr n t (p1 p2:parser t) : 
   ckdisj_p n p1 p2 = true -> ~(exists s, exists v1, exists v2, in_parser p1 s v1 /\ 
     in_parser p2 s v2).
@@ -708,8 +708,8 @@ Qed.
 Definition alts_r := List.fold_right OptAlt_r Zero_r.
 
 (** Count up from [i] to [m] and try to check if [r] is equivalent to [Zero_r]
-    using [i] as the bound.  This tries to avoid checking to deeply when it's
-    not necessary. *)
+ *  using [i] as the bound.  This tries to avoid checking to deeply when it's
+ *  not necessary. *)
 Fixpoint ckzeros i m r := 
   match i with 
     | 0%nat => false
@@ -727,10 +727,10 @@ Proof.
 Qed.
 
 (** [check_all_r] checks that all [rexp]s in the list [rs] are mutually disjoint.
-    I tried a divide and conquer strategy, where we do O(n lg n) tests but it 
-    turns out to be no faster than this rather brute force approach because the
-    derivatives were growing.  Here, we do O(n^2) tests which is still better 
-    than doing all pair-wise comparisons. *)
+ *  I tried a divide and conquer strategy, where we do O(n lg n) tests but it 
+ *  turns out to be no faster than this rather brute force approach because the
+ *  derivatives were growing.  Here, we do O(n^2) tests which is still better 
+ *  than doing all pair-wise comparisons. *)
 Fixpoint check_all_r m (rs:list rexp) := 
   match rs with 
     | nil => true
@@ -738,9 +738,9 @@ Fixpoint check_all_r m (rs:list rexp) :=
   end.
 
 (** Correctness of [check_all_r]:  If [check_all_r m rs] returns [true], then
-    we know that if [s] is in the denotation of [alts_r rs], then there is some
-    [r] in [rs], such that [s] is in the denotation of [r], and furthermore,
-    [s] is not in the denotation of any of the rest of the [rexp]s. *)
+ *  we know that if [s] is in the denotation of [alts_r rs], then there is some
+ *  [r] in [rs], such that [s] is in the denotation of [r], and furthermore,
+ *  [s] is not in the denotation of any of the rest of the [rexp]s. *)
 Lemma check_all_r_corr m rs : 
   check_all_r m rs = true -> 
   forall s, in_rexp (alts_r rs) s -> 
@@ -863,9 +863,9 @@ Proof.
 Qed.
 
 (** [check_all_p] is correct -- if [check_all_p m ps] returns [true], then
-   if [s] and [v] are in the denotation of [alts ps], then we know there is 
-   a unique [p] in [ps] such that [s] and [v] are in the denotation of [p],
-   but that [s] is not in the denotation of any other parser in [ps]. *)
+ *  if [s] and [v] are in the denotation of [alts ps], then we know there is 
+ *  a unique [p] in [ps] such that [s] and [v] are in the denotation of [p],
+ *  but that [s] is not in the denotation of any other parser in [ps]. *)
 Lemma check_all_p_corr m t (ps:list (parser t)) :
   check_all_p m ps = true -> 
   forall s v, 
@@ -914,19 +914,16 @@ Proof.
 Qed.
 
 (** Check that all of the instruction parsers are mutually disjoint -- if you
-    pass in a number like 3 this should evaluate to true -- but it takes a
-    really long time.  So I suggest extracting this function and running it
-    in ML. *)
+ *  pass in a number like 3 this should evaluate to true -- but it takes a
+ *  really long time.  So I suggest extracting this function and running it
+ *  in ML. *)
 Definition check_all_instructions m := check_all_p m instruction_parser_list.
 
 Transparent token_id_to_chars.
 Transparent num_tokens.
-(** FIX:  This is admitted now, just because it takes a long time to run, 
-    but it should be trivial. *)
+
 Lemma all_instructions_disjoint : check_all_instructions 3 = true.
 Proof.
-(*Admitted.*)
-
   unfold check_all_instructions.
   vm_compute.
   auto.
@@ -944,7 +941,7 @@ Ltac t := repeat
   end.
 
 (** If [s] and [v] are in the denotation of [alts (p::(ps1++ps2))] then
-    [s] and [v] are in the denotation of [alts (ps1++p::ps2)]. *)
+ *  [s] and [v] are in the denotation of [alts (ps1++p::ps2)]. *)
 Lemma in_alts_comm' : forall t (ps1 ps2:list (parser t)) (p:parser t) s v,
   in_parser (alts (p :: (ps1 ++ ps2))) s v -> 
   in_parser (alts (ps1 ++ p :: ps2)) s v.
@@ -956,10 +953,10 @@ Proof.
 Qed.
 
 (** If [s] and [v] are in the denotation of [alts (ps1 ++ p :: ps2)], and
-    [s] and [v] are also in the denotation of [p] and not in the 
-    denotation of [alts (ps1 ++ ps2)], then if we split [ps1++p::ps2] into
-    some other [ps1'++p'::ps2'] such that [s] and [v] are in [p'], then
-    [ps1=ps1'] and [p=p'] and [ps2=ps2']. *)
+ *  [s] and [v] are also in the denotation of [p] and not in the 
+ *  denotation of [alts (ps1 ++ ps2)], then if we split [ps1++p::ps2] into
+ *  some other [ps1'++p'::ps2'] such that [s] and [v] are in [p'], then
+ *  [ps1=ps1'] and [p=p'] and [ps2=ps2']. *)
 Lemma splits_unique t (ps : list (parser t)) : 
   forall s v, 
     in_parser (alts ps) s v -> 
@@ -987,7 +984,7 @@ Proof.
 Qed.
 
 (** If [s] and [v] are in the denotation of [alts ps], then there is 
-    some [ps1++p::ps2=ps] such that [s] and [v] are in the denotation of [p]. *)
+ *  some [ps1++p::ps2=ps] such that [s] and [v] are in the denotation of [p]. *)
 Lemma in_alts_split : forall t (ps:list (parser t)) s v, 
   in_parser (alts ps) s v -> 
   exists ps1, exists p, exists ps2, 
@@ -999,7 +996,7 @@ Proof.
 Qed.
 
 (** If [p] is an element of [ps] and [s] and [v] are in the denotation of
-    [p], then they are also in the denotation of [alts ps]. *)
+ *  [p], then they are also in the denotation of [alts ps]. *)
 Lemma elt_in_alts : forall t (p:parser t) (ps:list (parser t)) s v,
   In p ps -> 
   in_parser p s v -> 
@@ -1010,7 +1007,7 @@ Proof.
 Qed.
   
 (** If [s] and [v] are in the denotation of [alts ps1] and [ps1] is
-    a subset of [ps2], then [s] and [v] are also in [alts ps2]. *)
+ *  a subset of [ps2], then [s] and [v] are also in [alts ps2]. *)
 Lemma subset_in : forall t (ps1 ps2 : list (parser t)) s v,
   in_parser (alts ps1) s v -> 
   (forall p, In p ps1 -> In p ps2) -> 
@@ -1039,9 +1036,9 @@ Proof.
 Qed.
 
 (** If all of the [ps] are disjoint (according to [check_all_p]), then 
-    for each subset [p1s] of [ps], if [s] and [v] are in [alts ps1] then
-    they are also in [alts ps] and if [s] and [v'] are in [alts ps] then
-    [s] and [v'] are in [alts p1s].  *)
+ *  for each subset [p1s] of [ps], if [s] and [v] are in [alts ps1] then
+ *  they are also in [alts ps] and if [s] and [v'] are in [alts ps] then
+ *  [s] and [v'] are in [alts p1s].  *)
 Lemma parse_split' : 
   forall t m (ps:list (parser t)), check_all_p m ps = true ->
   forall p1s s v, 
@@ -1061,13 +1058,13 @@ Proof.
 Qed.
 
 (** This lemma tells us that if we take a sublist [ps] of the parsers in the list of
-    instruction parsers (e.g., used to build a DFA), and if [ps] accepts some string
-    [s] and produces some value [v], then (a) running the heavyweight parser will also
-    accept [s] and produce [v], and (b) if the heavyweight parser can produce a 
-    different value [v'] from [s], then [ps] can do that as well.  So if [ps] is
-    deterministic, then running either [ps] or the heavyweight parser will result
-    in at most one unique value [v].
-*)
+ *  instruction parsers (e.g., used to build a DFA), and if [ps] accepts some string
+ *  [s] and produces some value [v], then (a) running the heavyweight parser will also
+ *  accept [s] and produce [v], and (b) if the heavyweight parser can produce a 
+ *  different value [v'] from [s], then [ps] can do that as well.  So if [ps] is
+ *  deterministic, then running either [ps] or the heavyweight parser will result
+ *  in at most one unique value [v].
+ *)
 Lemma parse_split : 
   forall ps,
     (forall p, In p ps -> In p instruction_parser_list) ->

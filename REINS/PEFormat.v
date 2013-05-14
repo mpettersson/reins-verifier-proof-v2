@@ -168,7 +168,7 @@ Record _IMAGE_EXPORT_DIRECTORY : Type := mkImageExportDirectory {
 	AddressOfNames : DWORD;
 	AddressOfNameOrdinals : DWORD
 }.
-(* TODO: what is IMAGE_SIZEOF_SHORT_NAME? *)
+
 Definition IMAGE_SIZEOF_SHORT_NAME := 8.
 
 Record _IMAGE_SECTION_HEADER : Type := mkImageSectionHeader {
