@@ -1,0 +1,49 @@
+DELTA
+=====
+- Rewrote the README.
+- Added comments to all files we modified indicating what was changed (definitions, lemmas, etc...).
+- Removed the unnecessary, outdated, and incorrect comments (to better aid readability).  
+- ReinsVerifierCorrectness.v Progression 
+	- Lemma signed_safemask_eq
+	- Proof of Lemma and_safeMask_aligned
+	- Definition checkProgram
+	- Definition process_buffer_aux
+	- Definition process_buffer
+	- Definition eqMemBuffer
+	- Definition codeLoaded
+	- Definition eqCode_after_trampoline
+	- Definition Inv
+	- Definition safeState
+	- Lemma process_buffer_aux_nil
+	- Lemma process_buffer_aux_addrRange
+	- Lemma process_buffer_addrRange
+	- Lemma process_buffer_aux_subset
+	- Lemma process_buffer_aux_start_in
+	- Lemma process_buffer_start_in
+	- Lemma extract_disp_include
+	- Lemma process_buffer_aux_inversion	
+	- Variable reinsjmp_nonIAT_dfa
+	- Variable reinsjmp_IAT_or_RET_dfa  
+	- Variable reinsjmp_IAT_CALL_dfa 
+	- Variable reinsjmp_nonIAT_mask 
+	- Variable reinsjmp_IAT_or_RET_mask
+	- Variable reinsjmp_IAT_CALL_p 
+	- Definition checkExecSection
+
+LIMITATIONS
+===========
+- ReinsVerifierCorrectness.v
+	- Verify the safe mask value in signed_safemask_eq
+	- Verify Definition checkSegments is correct
+- Review PEFormat.v
+- Review PETraversal.v
+	- Several Definitions have bugs (not used, commented out).
+	- Should verify. 
+- PE Proofs.
+- ReinsVerifierDFA.v
+	- Verify Definition non_cflow_instrs_nosize_pre 
+- Coq 8.4 Compatible.
+- MMX Instructions (B.3 of the Intel IA32 (x86) 32-bit instruction set architecture)
+- Streaming SIMD Instructions (B.4 of the Intel IA32 (x86) 32-bit instruction set architecture)
+- Floating Point Instructions (B.5 of the Intel IA32 (x86) 32-bit instruction set architecture)
+- Testing (mostly to validate the definition of the x86 model)
