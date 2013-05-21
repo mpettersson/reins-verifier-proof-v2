@@ -42,24 +42,24 @@
  *       REINS rewritten binaries.
  *
  *  Changed	- Lemma signed_safemask_eq
- *		    - Proof of Lemma and_safeMask_aligned
- *		    - Definition checkProgram
- *		    - Definition process_buffer_aux
- *		    - Definition process_buffer
- *		    - Definition eqMemBuffer
- *		    - Definition codeLoaded
- *		    - Definition eqCode_after_trampoline
- *		    - Definition Inv
- *		    - Definition safeState
- *		    - Lemma process_buffer_aux_nil
- *		    - Lemma process_buffer_aux_addrRange
- *		    - Lemma process_buffer_addrRange
- *		    - Lemma process_buffer_aux_subset
- *		    - Lemma process_buffer_aux_start_in
- *		    - Lemma process_buffer_start_in
- *		    - Lemma extract_disp_include
- *		    - Lemma process_buffer_aux_inversion
- *		    - 
+ *		- Proof of Lemma and_safeMask_aligned
+ *		- Definition checkProgram
+ *		- Definition process_buffer_aux
+ *		- Definition process_buffer
+ *		- Definition eqMemBuffer
+ *		- Definition codeLoaded
+ *		- Definition eqCode_after_trampoline
+ *		- Definition Inv
+ *		- Definition safeState
+ *		- Lemma process_buffer_aux_nil
+ *		- Lemma process_buffer_aux_addrRange
+ *		- Lemma process_buffer_addrRange
+ *		- Lemma process_buffer_aux_subset
+ *		- Lemma process_buffer_aux_start_in
+ *		- Lemma process_buffer_start_in
+ *		- Lemma extract_disp_include
+ *		- Lemma process_buffer_aux_inversion
+ *		- 
  *
  *  Added	- Lemma safeMask_low_mem
  *	    	- Lemma and_safeMask_low_mem
@@ -3812,19 +3812,30 @@ Section VERIFIER_CORR.
     abstract_build_dfa 256 nat2bools 400 (par2rec (alts dir_cflow))
       = Some dir_cflow_dfa.
 
-  Hypothesis reinsjmp_dfa_built: 
-    abstract_build_dfa 256 nat2bools 400 (par2rec (alts reinsjmp_mask))
-      = Some reinsjmp_dfa.
+  Hypothesis reinsjmp_nonIAT_dfa_built: 
+    abstract_build_dfa 256 nat2bools 400 (par2rec reinsjmp_nonIAT_mask)
+      = Some reinsjmp_nonIAT_dfa.
+  
+  Hypothesis reinsjmp_IAT_or_RET_dfa_built:
+    abstract_build_dfa 256 nat2bools 400 (par2rec reinsjmp_IAT_JMP_or_RET_mask)
+      = Some reinsjmp_IAT_or_RET_dfa.
+
+  Hypothesis reinsjmp_IAT_CALL_dfa_built:
+    abstract_build_dfa 256 nat2bools 400 (par2rec reinsjmp_IAT_CALL_p)
+      = Some reinsjmp_IAT_CALL_dfa.
 
   Ltac clean := 
-    clear non_cflow_dfa_built; clear dir_cflow_dfa_built; clear reinsjmp_dfa_built.
+    clear non_cflow_dfa_built; clear dir_cflow_dfa_built; clear reinsjmp_nonIAT_dfa_built;
+    clear reinsjmp_IAT_or_RET_dfa_built; clear reinsjmp_IAT_CALL_dfa_built.
 
   (* The three cases when the current state is a safe state *)
   (* The proof theorem needs the interface lemmas from the parser;
    * will prove this theorem when the lemmmas become stable *)
+
+  (* TODO - REVIEW THEOREM *)
   Theorem safeState_next_instr : forall s code startAddrs,
     codeLoaded code s
-      -> checkProgram code = (true, startAddrs)
+      -> checkProgram' code = (true, startAddrs)
       -> Int32Set.In (PC s) startAddrs
       -> (exists pre, exists ins, exists len, 
            fetch_instruction (PC s) s = (Okay_ans (pre, ins, len), s)
@@ -3842,6 +3853,8 @@ Section VERIFIER_CORR.
           fetch_instruction (PC s) s = (Okay_ans (pre1, ins1, len1), s) /\
           fetch_instruction (PC s +32_p len1) s = (Okay_ans (pre2, ins2, len2), s) /\
           reinsjmp_nonIAT_mask_instr pre1 ins1 pre2 ins2 = true).
+  Proof. Admitted. 
+  (* TODO PROOF 
   Proof. unfold checkProgram, ReinsVerifier.checkProgram; intros.
     remember_destruct_head in H0 as pb; try discriminate.
     destruct p as [startAddrs' checkAddrs].
@@ -3986,7 +3999,7 @@ Section VERIFIER_CORR.
       split. assumption. 
       split. rewrite H42. assumption.
         assumption.
-  Qed.
+  Qed. *)
 
   (** The proof that any safeState is safe for in some k *)
 
@@ -4107,11 +4120,11 @@ Section VERIFIER_CORR.
     forall s inv, safeState s inv -> safeInSomeK s inv.
   Proof. intros. clean. dupHyp H.
     safestate_unfold_tac.
-    remember (snd (checkProgram code)) as startAddrs.
+    remember (snd (checkProgram' code)) as startAddrs.
     destruct H2.
     Case "pc in startAddrs".
-      assert (checkProgram code = (true, startAddrs)).
-        destruct (checkProgram code); prover.
+      assert (checkProgram' code = (true, startAddrs)).
+        destruct (checkProgram' code); prover.
       use_lemma safeState_next_instr by eassumption.
       destruct H7. 
       SCase "Next: non_cflow_instr".

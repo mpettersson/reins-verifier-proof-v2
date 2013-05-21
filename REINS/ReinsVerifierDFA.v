@@ -30,26 +30,26 @@
  *       REINS rewritten binaries.
  *
  *	Changed - Definition logChunkSize
- *			- Definition safeMask
- *			- Definition reinsjmp_nonIAT_mask_instr
+ *					- Definition safeMask
+ *					- Definition reinsjmp_nonIAT_mask_instr
  *
  *	Added	- Definition lowMemZeroBits
- *			- Definition lowMemCutoff
- *			- Definition dir_cflow_parser
- *			- Definition int32_p
- *			- Definition reinsjmp_nonIAT_MASK_p
- *			- Definition reinsjmp_nonIAT_MASK_EAX25_p
- *			- Definition reinsjmp_IAT_or_RET_MASK_p
- *			- Definition reinsjmp_nonIAT_JMP_p
- *			- Definition reinsjmp_nonIAT_CALL_p
- *			- Definition reinsjmp_IAT_JMP_p
- *			- Definition reinsjmp_IAT_CALL_p
- *			- Definition reinsjmp_nonIAT_p
- *			- Definition reinsjmp_nonIAT_EAX25_p
- *			- Definition reinsjmp_IAT_JMP_or_RET_p
- *			- Definition reinsjmp_nonIAT_mask
- *			- Definition reinsjmp_IAT_JMP_or_RET_mask
- *			- Definition reinsjmp_IAT_or_RET_mask_instr
+ *				- Definition lowMemCutoff
+ *				- Definition dir_cflow_parser
+ *				- Definition int32_p
+ *				- Definition reinsjmp_nonIAT_MASK_p
+ *				- Definition reinsjmp_nonIAT_MASK_EAX25_p
+ *				- Definition reinsjmp_IAT_or_RET_MASK_p
+ *				- Definition reinsjmp_nonIAT_JMP_p
+ *				- Definition reinsjmp_nonIAT_CALL_p
+ *				- Definition reinsjmp_IAT_JMP_p
+ *				- Definition reinsjmp_IAT_CALL_p
+ *				- Definition reinsjmp_nonIAT_p
+ *				- Definition reinsjmp_nonIAT_EAX25_p
+ *				- Definition reinsjmp_IAT_JMP_or_RET_p
+ *				- Definition reinsjmp_nonIAT_mask
+ *				- Definition reinsjmp_IAT_JMP_or_RET_mask
+ *				- Definition reinsjmp_IAT_or_RET_mask_instr
  *
  *   
  *   Page 7 of RockSalt - "In practice, calculating a DFA in this fashion
