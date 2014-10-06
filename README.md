@@ -1,1 +1,1 @@
-This is the README.md file for the git repo.
+This is a continuation of a UTDallas(.edu) graduate project to prove aspects of the REINS algorithm (http://www.utdallas.edu/~hamlen/wartell12acsac.pdf) in Coq, and is an extention of the RockSalt project (http://sos.cse.lehigh.edu/gonative/index.html).
